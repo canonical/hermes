@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"time"
+
+	"github.com/yukariatlas/hermes/backend/ftrace"
 )
 
 type TraceContext struct {
@@ -15,11 +17,11 @@ type TraceContext struct {
 }
 
 type TaskTraceInstance struct {
-	ftrace *Ftrace
+	ftrace *ftrace.Ftrace
 }
 
 func NewTaskTraceInstance() (TaskInstance, error) {
-	ftrace, err := NewFtrace()
+	ftrace, err := ftrace.NewFtrace()
 	if err != nil {
 		return nil, err
 	}

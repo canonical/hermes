@@ -1,4 +1,4 @@
-package collector
+package perf
 
 type Perf struct{}
 
