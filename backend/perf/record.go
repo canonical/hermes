@@ -245,6 +245,27 @@ func (rec *ReadRecord) Process() {
 	logrus.Errorf("[ReadRecord] Pid [%d]", rec.Pid)
 }
 
+type GroupReadRecord struct {
+	Header
+	Pid              uint32
+	Tid              uint32
+	GroupReadContent GroupReadContent
+	SampleID
+}
+
+func (rec *GroupReadRecord) Decode(raw *RawRecord, attr *Attr) {
+	parser := FieldParser(raw.Data)
+	rec.Header = raw.Header
+	parser.Uint32(&rec.Pid)
+	parser.Uint32(&rec.Tid)
+	parser.ParseGroupReadContent(attr.ReadFormat, &rec.GroupReadContent)
+	parser.ParseSampleID(attr.Options.SampleIDAll, attr.SampleFormat, &rec.SampleID)
+}
+
+func (rec *GroupReadRecord) Process() {
+	logrus.Errorf("[GroupReadRecord] Pid [%d]", rec.Pid)
+}
+
 type BranchEntry struct {
 	From         uint64
 	To           uint64
@@ -377,6 +398,116 @@ func (rec *SampleRecord) Decode(raw *RawRecord, attr *Attr) {
 
 func (rec *SampleRecord) Process() {
 	logrus.Errorf("[SampleRecord] IP [%d]", rec.IP)
+}
+
+type GroupSampleRecord struct {
+	Header
+	Identifier       uint64
+	IP               uint64
+	Pid              uint32
+	Tid              uint32
+	Time             uint64
+	Addr             uint64
+	ID               uint64
+	StreamID         uint64
+	CPU              uint32
+	_                uint32
+	Period           uint64
+	GroupReadContent GroupReadContent
+	Callchain        []uint64
+	Raw              []byte
+	BranchStack      []BranchEntry
+	RegsABI          uint64
+	RegsUser         []uint64
+	StackUser        []byte
+	StackUserDynSize uint64
+	Weight           uint64
+	DataSrc          uint64
+	Transaction      uint64
+	RegsIntrABI      uint64
+	RegsIntr         []uint64
+	PhysAddr         uint64
+	Aux              []byte
+	DataPageSize     uint64
+	CodePageSize     uint64
+}
+
+func (rec *GroupSampleRecord) Decode(raw *RawRecord, attr *Attr) {
+	parser := FieldParser(raw.Data)
+	rec.Header = raw.Header
+	parser.Uint64Cond(attr.SampleFormat.Identifier, &rec.Identifier)
+	parser.Uint64Cond(attr.SampleFormat.IP, &rec.IP)
+	parser.Uint32Cond(attr.SampleFormat.Tid, &rec.Pid)
+	parser.Uint32Cond(attr.SampleFormat.Tid, &rec.Tid)
+	parser.Uint64Cond(attr.SampleFormat.Time, &rec.Time)
+	parser.Uint64Cond(attr.SampleFormat.Addr, &rec.Addr)
+	parser.Uint64Cond(attr.SampleFormat.ID, &rec.ID)
+	parser.Uint64Cond(attr.SampleFormat.StreamID, &rec.StreamID)
+
+	var reserved uint32
+	parser.Uint32Cond(attr.SampleFormat.CPU, &rec.CPU)
+	parser.Uint32Cond(attr.SampleFormat.CPU, &reserved)
+	if attr.SampleFormat.Read {
+		parser.ParseGroupReadContent(attr.ReadFormat, &rec.GroupReadContent)
+	}
+	if attr.SampleFormat.Callchain {
+		var nr uint64
+		parser.Uint64(&nr)
+		rec.Callchain = make([]uint64, nr)
+		for i := 0; i < int(nr); i++ {
+			parser.Uint64(&rec.Callchain[i])
+		}
+	}
+	if attr.SampleFormat.Raw {
+		parser.BytesByUint32Size(&rec.Raw)
+	}
+	if attr.SampleFormat.BranchStack {
+		var nr uint64
+		parser.Uint64(&nr)
+		rec.BranchStack = make([]BranchEntry, nr)
+		for i := 0; i < int(nr); i++ {
+			var from, to, flags uint64
+			parser.Uint64(&from)
+			parser.Uint64(&to)
+			parser.Uint64(&flags)
+			rec.BranchStack[i].Decode(from, to, flags)
+		}
+	}
+	if attr.SampleFormat.RegsUser {
+		parser.Uint64(&rec.RegsABI)
+		nr := bits.OnesCount64(attr.SampleRegsUser)
+		rec.RegsUser = make([]uint64, nr)
+		for i := 0; i < nr; i++ {
+			parser.Uint64(&rec.RegsUser[i])
+		}
+	}
+	if attr.SampleFormat.StackUser {
+		parser.BytesByUint64Size(&rec.StackUser)
+		if len(rec.StackUser) > 0 {
+			parser.Uint64(&rec.StackUserDynSize)
+		}
+	}
+	parser.Uint64Cond(attr.SampleFormat.Weight, &rec.Weight)
+	parser.Uint64Cond(attr.SampleFormat.DataSrc, &rec.DataSrc)
+	parser.Uint64Cond(attr.SampleFormat.Transaction, &rec.Transaction)
+	if attr.SampleFormat.RegsIntr {
+		parser.Uint64(&rec.RegsIntrABI)
+		nr := bits.OnesCount64(attr.SampleRegsIntr)
+		rec.RegsIntr = make([]uint64, nr)
+		for i := 0; i < int(nr); i++ {
+			parser.Uint64(&rec.RegsIntr[i])
+		}
+	}
+	parser.Uint64Cond(attr.SampleFormat.PhysAddr, &rec.PhysAddr)
+	if attr.SampleFormat.Aux {
+		parser.BytesByUint64Size(&rec.Aux)
+	}
+	parser.Uint64Cond(attr.SampleFormat.DataPageSize, &rec.DataPageSize)
+	parser.Uint64Cond(attr.SampleFormat.CodePageSize, &rec.CodePageSize)
+}
+
+func (rec *GroupSampleRecord) Process() {
+	logrus.Errorf("[GroupSampleRecord] IP [%d]", rec.IP)
 }
 
 type Mmap2Record struct {
@@ -599,9 +730,17 @@ func (parser *RecordParser) newRecord(raw *RawRecord) (Record, error) {
 	case ForkRec:
 		rec = &ForkRecord{}
 	case ReadRec:
-		rec = &ReadRecord{}
+		if parser.attr.ReadFormat.Group {
+			rec = &GroupReadRecord{}
+		} else {
+			rec = &ReadRecord{}
+		}
 	case SampleRec:
-		rec = &SampleRecord{}
+		if parser.attr.ReadFormat.Group {
+			rec = &GroupSampleRecord{}
+		} else {
+			rec = &SampleRecord{}
+		}
 	case Mmap2Rec:
 		rec = &Mmap2Record{}
 	case AuxRec:

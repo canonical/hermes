@@ -126,3 +126,8 @@ func (handler *RingBufHandler) handleRecords() {
 func (handler *RingBufHandler) HandleRecords() {
 	go handler.handleRecords()
 }
+
+func (handler *RingBufHandler) Release() {
+	unix.Munmap(handler.ringBuf.Ring)
+	unix.Close(handler.termFd)
+}

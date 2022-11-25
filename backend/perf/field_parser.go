@@ -80,3 +80,17 @@ func (parser *FieldParser) ParseReadContent(readFormat ReadFormat, readContent *
 	parser.Uint64Cond(readFormat.TotalTimeRunning, &readContent.TimeRunning)
 	parser.Uint64Cond(readFormat.ID, &readContent.ID)
 }
+
+func (parser *FieldParser) ParseGroupReadContent(readFormat ReadFormat, groupReadContent *GroupReadContent) {
+	var nr uint64
+	parser.Uint64(&nr)
+	parser.Uint64Cond(readFormat.TotalTimeEnabled, &groupReadContent.TimeEnabled)
+	parser.Uint64Cond(readFormat.TotalTimeRunning, &groupReadContent.TimeRunning)
+	groupReadContent.Values = make([]struct {
+		Value, ID uint64
+	}, nr)
+	for i := 0; i < int(nr); i++ {
+		parser.Uint64(&groupReadContent.Values[i].Value)
+		parser.Uint64Cond(readFormat.ID, &groupReadContent.Values[i].ID)
+	}
+}

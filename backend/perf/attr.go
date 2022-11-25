@@ -32,6 +32,10 @@ const (
 	RefCPUCycles          HardwareEvent = unix.PERF_COUNT_HW_REF_CPU_CYCLES
 )
 
+type AttrConfigurator interface {
+	Configure(attr *Attr)
+}
+
 func (event HardwareEvent) GetAttr() *Attr {
 	return &Attr{
 		Type:   unix.PERF_TYPE_HARDWARE,
@@ -40,6 +44,11 @@ func (event HardwareEvent) GetAttr() *Attr {
 			Disabled: true,
 		},
 	}
+}
+
+func (event HardwareEvent) Configure(attr *Attr) {
+	attr.Type = unix.PERF_TYPE_HARDWARE
+	attr.Config = uint64(event)
 }
 
 type SoftwareEvent uint64
@@ -66,6 +75,11 @@ func (event SoftwareEvent) GetAttr() *Attr {
 			Disabled: true,
 		},
 	}
+}
+
+func (event SoftwareEvent) Configure(attr *Attr) {
+	attr.Type = unix.PERF_TYPE_SOFTWARE
+	attr.Config = uint64(event)
 }
 
 type SampleFormat struct {
@@ -144,6 +158,7 @@ type ReadFormat struct {
 	TotalTimeEnabled bool
 	TotalTimeRunning bool
 	ID               bool
+	Group            bool
 }
 
 func (format *ReadFormat) BitFields() uint64 {
@@ -151,6 +166,7 @@ func (format *ReadFormat) BitFields() uint64 {
 		format.TotalTimeEnabled,
 		format.TotalTimeRunning,
 		format.ID,
+		format.Group,
 	}
 
 	return bitFieldsToUint64(bitFields)
@@ -168,6 +184,21 @@ func (format *ReadFormat) CalcRequiredSize() int {
 		size += 8
 	}
 	return size
+}
+
+func (format ReadFormat) CalcGroupRequiredSize(events int) int {
+	size := 8
+	if format.TotalTimeEnabled {
+		size += 8
+	}
+	if format.TotalTimeRunning {
+		size += 8
+	}
+	valSize := 8
+	if format.ID {
+		valSize += 8
+	}
+	return size + events*valSize
 }
 
 type Options struct {
@@ -305,6 +336,10 @@ type Attr struct {
 	SampleRegsIntr   uint64
 	AuxWatermark     uint32
 	SampleMaxStack   uint16
+}
+
+func (_attr *Attr) Configure(attr *Attr) {
+	*attr = *_attr
 }
 
 func (attr *Attr) ToUnixPerfEventAttr() *unix.PerfEventAttr {
