@@ -6,7 +6,6 @@ import (
 	"sync/atomic"
 	"unsafe"
 
-	"github.com/sirupsen/logrus"
 	"golang.org/x/sys/unix"
 )
 
@@ -32,9 +31,9 @@ const (
 )
 
 type Header struct {
-	Type RecordType
-	Misc uint16
-	Size uint16
+	Type RecordType `json:"type"`
+	Misc uint16     `json:"misc"`
+	Size uint16     `json:"size"`
 }
 
 type RawRecord struct {
@@ -44,34 +43,35 @@ type RawRecord struct {
 
 type Record interface {
 	Decode(raw *RawRecord, attr *Attr)
-	Process()
 }
 
 type SampleID struct {
-	Pid        uint32
-	Tid        uint32
-	Time       uint64
-	ID         uint64
-	StreamID   uint64
-	CPU        uint32
-	_          uint32 // reserved
-	Identifier uint64
+	Pid        uint32 `json:"pid"`
+	Tid        uint32 `json:"tid"`
+	Time       uint64 `json:"time"`
+	ID         uint64 `json:"id"`
+	StreamID   uint64 `json:"stream_id"`
+	CPU        uint32 `json:"cpu"`
+	_          uint32 `json:"res"`
+	Identifier uint64 `json:"identifier"`
 }
 
 type MmapRecord struct {
 	Header
-	Pid      uint32
-	Tid      uint32
-	Addr     uint64
-	Len      uint64
-	Pgoff    uint64
-	Filename string
+	RecordType RecordType `json:"record_type"`
+	Pid        uint32     `json:"pid"`
+	Tid        uint32     `json:"tid"`
+	Addr       uint64     `json:"addr"`
+	Len        uint64     `json:"len"`
+	Pgoff      uint64     `json:"pgoff"`
+	Filename   string     `json:"filename"`
 	SampleID
 }
 
 func (rec *MmapRecord) Decode(raw *RawRecord, attr *Attr) {
 	parser := FieldParser(raw.Data)
 	rec.Header = raw.Header
+	rec.RecordType = MmapRec
 	parser.Uint32(&rec.Pid)
 	parser.Uint32(&rec.Tid)
 	parser.Uint64(&rec.Addr)
@@ -81,63 +81,57 @@ func (rec *MmapRecord) Decode(raw *RawRecord, attr *Attr) {
 	parser.ParseSampleID(attr.Options.SampleIDAll, attr.SampleFormat, &rec.SampleID)
 }
 
-func (rec *MmapRecord) Process() {
-	logrus.Errorf("[MmapRecord] Pid [%d]", rec.Pid)
-}
-
 type LostRecord struct {
 	Header
-	ID   uint64
-	Lost uint64
+	RecordType RecordType `json:"record_type"`
+	ID         uint64     `json:"id"`
+	Lost       uint64     `json:"lost"`
 	SampleID
 }
 
 func (rec *LostRecord) Decode(raw *RawRecord, attr *Attr) {
 	parser := FieldParser(raw.Data)
 	rec.Header = raw.Header
+	rec.RecordType = LostRec
 	parser.Uint64(&rec.ID)
 	parser.Uint64(&rec.Lost)
 	parser.ParseSampleID(attr.Options.SampleIDAll, attr.SampleFormat, &rec.SampleID)
 }
 
-func (rec *LostRecord) Process() {
-	logrus.Errorf("[LostRecord] ID [%d]", rec.ID)
-}
-
 type CommRecord struct {
 	Header
-	Pid  uint32
-	Tid  uint32
-	Comm string
+	RecordType RecordType `json:"record_type"`
+	Pid        uint32     `json:"pid"`
+	Tid        uint32     `json:"tid"`
+	Comm       string     `json:"comm"`
 	SampleID
 }
 
 func (rec *CommRecord) Decode(raw *RawRecord, attr *Attr) {
 	parser := FieldParser(raw.Data)
 	rec.Header = raw.Header
+	rec.RecordType = CommRec
 	parser.Uint32(&rec.Pid)
 	parser.Uint32(&rec.Tid)
 	parser.String(&rec.Comm)
 	parser.ParseSampleID(attr.Options.SampleIDAll, attr.SampleFormat, &rec.SampleID)
 }
 
-func (rec *CommRecord) Process() {
-	logrus.Errorf("[CommRecord] Pid [%d]", rec.Pid)
-}
-
 type ExitRecord struct {
 	Header
-	Pid  uint32
-	Ppid uint32
-	Tid  uint32
-	Ptid uint32
-	Time uint64
+	RecordType RecordType `json:"record_type"`
+	Pid        uint32     `json:"pid"`
+	Ppid       uint32     `json:"ppid"`
+	Tid        uint32     `json:"tid"`
+	Ptid       uint32     `json:"ptid"`
+	Time       uint64     `json:"time"`
 	SampleID
 }
 
 func (rec *ExitRecord) Decode(raw *RawRecord, attr *Attr) {
 	parser := FieldParser(raw.Data)
 	rec.Header = raw.Header
+	rec.RecordType = ExitRec
 	parser.Uint32(&rec.Pid)
 	parser.Uint32(&rec.Ppid)
 	parser.Uint32(&rec.Tid)
@@ -146,65 +140,59 @@ func (rec *ExitRecord) Decode(raw *RawRecord, attr *Attr) {
 	parser.ParseSampleID(attr.Options.SampleIDAll, attr.SampleFormat, &rec.SampleID)
 }
 
-func (rec *ExitRecord) Process() {
-	logrus.Errorf("[ExitRecord] Pid [%d]", rec.Pid)
-}
-
 type ThrottleRecord struct {
 	Header
-	Time     uint64
-	ID       uint64
-	StreamID uint64
+	RecordType RecordType `json:"record_type"`
+	Time       uint64     `json:"time"`
+	ID         uint64     `json:"id"`
+	StreamID   uint64     `json:"stream_id"`
 	SampleID
 }
 
 func (rec *ThrottleRecord) Decode(raw *RawRecord, attr *Attr) {
 	parser := FieldParser(raw.Data)
 	rec.Header = raw.Header
+	rec.RecordType = ThrottleRec
 	parser.Uint64(&rec.Time)
 	parser.Uint64(&rec.ID)
 	parser.Uint64(&rec.StreamID)
 	parser.ParseSampleID(attr.Options.SampleIDAll, attr.SampleFormat, &rec.SampleID)
 }
 
-func (rec *ThrottleRecord) Process() {
-	logrus.Errorf("[ThrottleRecord] ID [%d]", rec.ID)
-}
-
 type UnthrottleRecord struct {
 	Header
-	Time     uint64
-	ID       uint64
-	StreamID uint64
+	RecordType RecordType `json:"record_type"`
+	Time       uint64     `json:"time"`
+	ID         uint64     `json:"id"`
+	StreamID   uint64     `json:"stream_id"`
 	SampleID
 }
 
 func (rec *UnthrottleRecord) Decode(raw *RawRecord, attr *Attr) {
 	parser := FieldParser(raw.Data)
 	rec.Header = raw.Header
+	rec.RecordType = UnthrottleRec
 	parser.Uint64(&rec.Time)
 	parser.Uint64(&rec.ID)
 	parser.Uint64(&rec.StreamID)
 	parser.ParseSampleID(attr.Options.SampleIDAll, attr.SampleFormat, &rec.SampleID)
 }
 
-func (rec *UnthrottleRecord) Process() {
-	logrus.Errorf("[UnthrottleRecord] ID [%d]", rec.ID)
-}
-
 type ForkRecord struct {
 	Header
-	Pid  uint32
-	Ppid uint32
-	Tid  uint32
-	Ptid uint32
-	Time uint64
+	RecordType RecordType `json:"record_type"`
+	Pid        uint32     `json:"pid"`
+	Ppid       uint32     `json:"ppid"`
+	Tid        uint32     `json:"tid"`
+	Ptid       uint32     `json:"ptid"`
+	Time       uint64     `json:"time"`
 	SampleID
 }
 
 func (rec *ForkRecord) Decode(raw *RawRecord, attr *Attr) {
 	parser := FieldParser(raw.Data)
 	rec.Header = raw.Header
+	rec.RecordType = ForkRec
 	parser.Uint32(&rec.Pid)
 	parser.Uint32(&rec.Ppid)
 	parser.Uint32(&rec.Tid)
@@ -213,42 +201,41 @@ func (rec *ForkRecord) Decode(raw *RawRecord, attr *Attr) {
 	parser.ParseSampleID(attr.Options.SampleIDAll, attr.SampleFormat, &rec.SampleID)
 }
 
-func (rec *ForkRecord) Process() {
-	logrus.Errorf("[ForkRecord] Pid [%d]", rec.Pid)
+type ReadContentValue struct {
+	Value uint64 `json:"value"`
+	ID    uint64 `json:"id"`
 }
 
 type ReadContent struct {
-	Value       uint64
-	TimeEnabled uint64
-	TimeRunning uint64
-	ID          uint64
+	TimeEnabled uint64 `json:"time_enabled"`
+	TimeRunning uint64 `json:"time_running"`
+	ReadContentValue
 }
 
 type ReadRecord struct {
 	Header
-	Pid         uint32
-	Tid         uint32
-	ReadContent ReadContent
+	RecordType  RecordType  `json:"record_type"`
+	Pid         uint32      `json:"pid"`
+	Tid         uint32      `json:"tid"`
+	ReadContent ReadContent `json:"values"`
 	SampleID
 }
 
 func (rec *ReadRecord) Decode(raw *RawRecord, attr *Attr) {
 	parser := FieldParser(raw.Data)
 	rec.Header = raw.Header
+	rec.RecordType = ReadRec
 	parser.Uint32(&rec.Pid)
 	parser.Uint32(&rec.Tid)
 	parser.ParseReadContent(attr.ReadFormat, &rec.ReadContent)
 	parser.ParseSampleID(attr.Options.SampleIDAll, attr.SampleFormat, &rec.SampleID)
 }
 
-func (rec *ReadRecord) Process() {
-	logrus.Errorf("[ReadRecord] Pid [%d]", rec.Pid)
-}
-
 type GroupReadRecord struct {
 	Header
-	Pid              uint32
-	Tid              uint32
+	RecordType       RecordType `json:"record_type"`
+	Pid              uint32     `json:"pid"`
+	Tid              uint32     `json:"tid"`
 	GroupReadContent GroupReadContent
 	SampleID
 }
@@ -256,25 +243,22 @@ type GroupReadRecord struct {
 func (rec *GroupReadRecord) Decode(raw *RawRecord, attr *Attr) {
 	parser := FieldParser(raw.Data)
 	rec.Header = raw.Header
+	rec.RecordType = ReadRec
 	parser.Uint32(&rec.Pid)
 	parser.Uint32(&rec.Tid)
 	parser.ParseGroupReadContent(attr.ReadFormat, &rec.GroupReadContent)
 	parser.ParseSampleID(attr.Options.SampleIDAll, attr.SampleFormat, &rec.SampleID)
 }
 
-func (rec *GroupReadRecord) Process() {
-	logrus.Errorf("[GroupReadRecord] Pid [%d]", rec.Pid)
-}
-
 type BranchEntry struct {
-	From         uint64
-	To           uint64
-	Mispredicted bool
-	Predicted    bool
-	InTrans      bool
-	Abort        bool
-	Cycles       uint16
-	BranchType   uint8
+	From         uint64 `json:"from"`
+	To           uint64 `json:"to"`
+	Mispredicted bool   `json:"mispred"`
+	Predicted    bool   `json:"predicted"`
+	InTrans      bool   `json:"in_tx"`
+	Abort        bool   `json:"abort"`
+	Cycles       uint16 `json:"cycles"`
+	BranchType   uint8  `json:"branch_type"`
 }
 
 func (entry *BranchEntry) Decode(from, to, flags uint64) {
@@ -292,39 +276,41 @@ func (entry *BranchEntry) Decode(from, to, flags uint64) {
 
 type SampleRecord struct {
 	Header
-	Identifier       uint64
-	IP               uint64
-	Pid              uint32
-	Tid              uint32
-	Time             uint64
-	Addr             uint64
-	ID               uint64
-	StreamID         uint64
-	CPU              uint32
-	_                uint32
-	Period           uint64
-	ReadContent      ReadContent
-	Callchain        []uint64
-	Raw              []byte
-	BranchStack      []BranchEntry
-	RegsABI          uint64
-	RegsUser         []uint64
-	StackUser        []byte
-	StackUserDynSize uint64
-	Weight           uint64
-	DataSrc          uint64
-	Transaction      uint64
-	RegsIntrABI      uint64
-	RegsIntr         []uint64
-	PhysAddr         uint64
-	Aux              []byte
-	DataPageSize     uint64
-	CodePageSize     uint64
+	RecordType       RecordType    `json:"record_type"`
+	Identifier       uint64        `json:"identifier"`
+	IP               uint64        `json:"ip"`
+	Pid              uint32        `json:"pid"`
+	Tid              uint32        `json:"tid"`
+	Time             uint64        `json:"time"`
+	Addr             uint64        `json:"addr"`
+	ID               uint64        `json:"id"`
+	StreamID         uint64        `json:"stream_id"`
+	CPU              uint32        `json:"cpu"`
+	_                uint32        `json:"res"`
+	Period           uint64        `json:"period"`
+	ReadContent      ReadContent   `json:"values"`
+	CallchainIps     []uint64      `json:"callchain_ips"`
+	RawData          []byte        `json:"raw_data"`
+	BranchStack      []BranchEntry `json:"lbr"`
+	RegsUserABI      uint64        `json:"regs_user_abi"`
+	RegsUserRegs     []uint64      `json:"regs_user_regs"`
+	StackUserData    []byte        `josn:"stack_user_data"`
+	StackUserDynSize uint64        `json:"stack_user_dyn_size"`
+	WeightFull       uint64        `json:"weight_full"`
+	DataSrc          uint64        `json:"data_src"`
+	Transaction      uint64        `json:"transaction"`
+	RegsIntrABI      uint64        `json:"regs_intr_abi"`
+	RegsIntrRegs     []uint64      `json:"regs_intr_regs"`
+	PhysAddr         uint64        `json:"phys_addr"`
+	AuxData          []byte        `json:"aux_data"`
+	DataPageSize     uint64        `json:"data_page_size"`
+	CodePageSize     uint64        `json:"code_page_size"`
 }
 
 func (rec *SampleRecord) Decode(raw *RawRecord, attr *Attr) {
 	parser := FieldParser(raw.Data)
 	rec.Header = raw.Header
+	rec.RecordType = SampleRec
 	parser.Uint64Cond(attr.SampleFormat.Identifier, &rec.Identifier)
 	parser.Uint64Cond(attr.SampleFormat.IP, &rec.IP)
 	parser.Uint32Cond(attr.SampleFormat.Tid, &rec.Pid)
@@ -343,13 +329,13 @@ func (rec *SampleRecord) Decode(raw *RawRecord, attr *Attr) {
 	if attr.SampleFormat.Callchain {
 		var nr uint64
 		parser.Uint64(&nr)
-		rec.Callchain = make([]uint64, nr)
+		rec.CallchainIps = make([]uint64, nr)
 		for i := 0; i < int(nr); i++ {
-			parser.Uint64(&rec.Callchain[i])
+			parser.Uint64(&rec.CallchainIps[i])
 		}
 	}
 	if attr.SampleFormat.Raw {
-		parser.BytesByUint32Size(&rec.Raw)
+		parser.BytesByUint32Size(&rec.RawData)
 	}
 	if attr.SampleFormat.BranchStack {
 		var nr uint64
@@ -364,77 +350,75 @@ func (rec *SampleRecord) Decode(raw *RawRecord, attr *Attr) {
 		}
 	}
 	if attr.SampleFormat.RegsUser {
-		parser.Uint64(&rec.RegsABI)
+		parser.Uint64(&rec.RegsUserABI)
 		nr := bits.OnesCount64(attr.SampleRegsUser)
-		rec.RegsUser = make([]uint64, nr)
+		rec.RegsUserRegs = make([]uint64, nr)
 		for i := 0; i < nr; i++ {
-			parser.Uint64(&rec.RegsUser[i])
+			parser.Uint64(&rec.RegsUserRegs[i])
 		}
 	}
 	if attr.SampleFormat.StackUser {
-		parser.BytesByUint64Size(&rec.StackUser)
-		if len(rec.StackUser) > 0 {
+		parser.BytesByUint64Size(&rec.StackUserData)
+		if len(rec.StackUserData) > 0 {
 			parser.Uint64(&rec.StackUserDynSize)
 		}
 	}
-	parser.Uint64Cond(attr.SampleFormat.Weight, &rec.Weight)
+	parser.Uint64Cond(attr.SampleFormat.Weight, &rec.WeightFull)
 	parser.Uint64Cond(attr.SampleFormat.DataSrc, &rec.DataSrc)
 	parser.Uint64Cond(attr.SampleFormat.Transaction, &rec.Transaction)
 	if attr.SampleFormat.RegsIntr {
 		parser.Uint64(&rec.RegsIntrABI)
 		nr := bits.OnesCount64(attr.SampleRegsIntr)
-		rec.RegsIntr = make([]uint64, nr)
+		rec.RegsIntrRegs = make([]uint64, nr)
 		for i := 0; i < int(nr); i++ {
-			parser.Uint64(&rec.RegsIntr[i])
+			parser.Uint64(&rec.RegsIntrRegs[i])
 		}
 	}
 	parser.Uint64Cond(attr.SampleFormat.PhysAddr, &rec.PhysAddr)
 	if attr.SampleFormat.Aux {
-		parser.BytesByUint64Size(&rec.Aux)
+		parser.BytesByUint64Size(&rec.AuxData)
 	}
 	parser.Uint64Cond(attr.SampleFormat.DataPageSize, &rec.DataPageSize)
 	parser.Uint64Cond(attr.SampleFormat.CodePageSize, &rec.CodePageSize)
 }
 
-func (rec *SampleRecord) Process() {
-	logrus.Errorf("[SampleRecord] IP [%d]", rec.IP)
-}
-
 type GroupSampleRecord struct {
 	Header
-	Identifier       uint64
-	IP               uint64
-	Pid              uint32
-	Tid              uint32
-	Time             uint64
-	Addr             uint64
-	ID               uint64
-	StreamID         uint64
-	CPU              uint32
-	_                uint32
-	Period           uint64
-	GroupReadContent GroupReadContent
-	Callchain        []uint64
-	Raw              []byte
-	BranchStack      []BranchEntry
-	RegsABI          uint64
-	RegsUser         []uint64
-	StackUser        []byte
-	StackUserDynSize uint64
-	Weight           uint64
-	DataSrc          uint64
-	Transaction      uint64
-	RegsIntrABI      uint64
-	RegsIntr         []uint64
-	PhysAddr         uint64
-	Aux              []byte
-	DataPageSize     uint64
-	CodePageSize     uint64
+	RecordType       RecordType       `json:"record_type"`
+	Identifier       uint64           `json:"identifier"`
+	IP               uint64           `json:"ip"`
+	Pid              uint32           `json:"pid"`
+	Tid              uint32           `json:"tid"`
+	Time             uint64           `json:"time"`
+	Addr             uint64           `json:"addr"`
+	ID               uint64           `json:"id"`
+	StreamID         uint64           `json:"stream_id"`
+	CPU              uint32           `json:"cpu"`
+	_                uint32           `json:"res"`
+	Period           uint64           `json:"period"`
+	GroupReadContent GroupReadContent `json:"values"`
+	CallchainIps     []uint64         `json:"callchain_ips"`
+	RawData          []byte           `json:"raw_data"`
+	BranchStack      []BranchEntry    `json:"lbr"`
+	RegsUserABI      uint64           `json:"regs_user_abi"`
+	RegsUserRegs     []uint64         `json:"regs_user_regs"`
+	StackUserData    []byte           `josn:"stack_user_data"`
+	StackUserDynSize uint64           `json:"stack_user_dyn_size"`
+	WeightFull       uint64           `json:"weight_full"`
+	DataSrc          uint64           `json:"data_src"`
+	Transaction      uint64           `json:"transaction"`
+	RegsIntrABI      uint64           `json:"regs_intr_abi"`
+	RegsIntrRegs     []uint64         `json:"regs_intr_regs"`
+	PhysAddr         uint64           `json:"phys_addr"`
+	AuxData          []byte           `json:"aux_data"`
+	DataPageSize     uint64           `json:"data_page_size"`
+	CodePageSize     uint64           `json:"code_page_size"`
 }
 
 func (rec *GroupSampleRecord) Decode(raw *RawRecord, attr *Attr) {
 	parser := FieldParser(raw.Data)
 	rec.Header = raw.Header
+	rec.RecordType = SampleRec
 	parser.Uint64Cond(attr.SampleFormat.Identifier, &rec.Identifier)
 	parser.Uint64Cond(attr.SampleFormat.IP, &rec.IP)
 	parser.Uint32Cond(attr.SampleFormat.Tid, &rec.Pid)
@@ -453,13 +437,13 @@ func (rec *GroupSampleRecord) Decode(raw *RawRecord, attr *Attr) {
 	if attr.SampleFormat.Callchain {
 		var nr uint64
 		parser.Uint64(&nr)
-		rec.Callchain = make([]uint64, nr)
+		rec.CallchainIps = make([]uint64, nr)
 		for i := 0; i < int(nr); i++ {
-			parser.Uint64(&rec.Callchain[i])
+			parser.Uint64(&rec.CallchainIps[i])
 		}
 	}
 	if attr.SampleFormat.Raw {
-		parser.BytesByUint32Size(&rec.Raw)
+		parser.BytesByUint32Size(&rec.RawData)
 	}
 	if attr.SampleFormat.BranchStack {
 		var nr uint64
@@ -474,62 +458,60 @@ func (rec *GroupSampleRecord) Decode(raw *RawRecord, attr *Attr) {
 		}
 	}
 	if attr.SampleFormat.RegsUser {
-		parser.Uint64(&rec.RegsABI)
+		parser.Uint64(&rec.RegsUserABI)
 		nr := bits.OnesCount64(attr.SampleRegsUser)
-		rec.RegsUser = make([]uint64, nr)
+		rec.RegsUserRegs = make([]uint64, nr)
 		for i := 0; i < nr; i++ {
-			parser.Uint64(&rec.RegsUser[i])
+			parser.Uint64(&rec.RegsUserRegs[i])
 		}
 	}
 	if attr.SampleFormat.StackUser {
-		parser.BytesByUint64Size(&rec.StackUser)
-		if len(rec.StackUser) > 0 {
+		parser.BytesByUint64Size(&rec.StackUserData)
+		if len(rec.StackUserData) > 0 {
 			parser.Uint64(&rec.StackUserDynSize)
 		}
 	}
-	parser.Uint64Cond(attr.SampleFormat.Weight, &rec.Weight)
+	parser.Uint64Cond(attr.SampleFormat.Weight, &rec.WeightFull)
 	parser.Uint64Cond(attr.SampleFormat.DataSrc, &rec.DataSrc)
 	parser.Uint64Cond(attr.SampleFormat.Transaction, &rec.Transaction)
 	if attr.SampleFormat.RegsIntr {
 		parser.Uint64(&rec.RegsIntrABI)
 		nr := bits.OnesCount64(attr.SampleRegsIntr)
-		rec.RegsIntr = make([]uint64, nr)
+		rec.RegsIntrRegs = make([]uint64, nr)
 		for i := 0; i < int(nr); i++ {
-			parser.Uint64(&rec.RegsIntr[i])
+			parser.Uint64(&rec.RegsIntrRegs[i])
 		}
 	}
 	parser.Uint64Cond(attr.SampleFormat.PhysAddr, &rec.PhysAddr)
 	if attr.SampleFormat.Aux {
-		parser.BytesByUint64Size(&rec.Aux)
+		parser.BytesByUint64Size(&rec.AuxData)
 	}
 	parser.Uint64Cond(attr.SampleFormat.DataPageSize, &rec.DataPageSize)
 	parser.Uint64Cond(attr.SampleFormat.CodePageSize, &rec.CodePageSize)
 }
 
-func (rec *GroupSampleRecord) Process() {
-	logrus.Errorf("[GroupSampleRecord] IP [%d]", rec.IP)
-}
-
 type Mmap2Record struct {
 	Header
-	Pid           uint32
-	Tid           uint32
-	Addr          uint64
-	Len           uint64
-	Pgoff         uint64
-	MajorID       uint32
-	MinorID       uint32
-	Ino           uint64
-	InoGeneration uint64
-	Prot          uint32
-	Flags         uint32
-	Filename      string
+	RecordType    RecordType `json:"record_type"`
+	Pid           uint32     `json:"pid"`
+	Tid           uint32     `json:"tid"`
+	Addr          uint64     `json:"addr"`
+	Len           uint64     `json:"len"`
+	Pgoff         uint64     `json:"pgoff"`
+	MajorID       uint32     `json:"maj"`
+	MinorID       uint32     `json:"min"`
+	Ino           uint64     `json:"ino"`
+	InoGeneration uint64     `json:"ino_generation"`
+	Prot          uint32     `json:"prot"`
+	Flags         uint32     `json:"flags"`
+	Filename      string     `json:"filename"`
 	SampleID
 }
 
 func (rec *Mmap2Record) Decode(raw *RawRecord, attr *Attr) {
 	parser := FieldParser(raw.Data)
 	rec.Header = raw.Header
+	rec.RecordType = Mmap2Rec
 	parser.Uint32(&rec.Pid)
 	parser.Uint32(&rec.Tid)
 	parser.Uint64(&rec.Addr)
@@ -545,117 +527,105 @@ func (rec *Mmap2Record) Decode(raw *RawRecord, attr *Attr) {
 	parser.ParseSampleID(attr.Options.SampleIDAll, attr.SampleFormat, &rec.SampleID)
 }
 
-func (rec *Mmap2Record) Process() {
-	logrus.Errorf("[Mmap2Record] Pid [%d]", rec.Pid)
-}
-
 type AuxRecord struct {
 	Header
-	Offset uint64
-	Size   uint64
-	Flags  uint64
+	RecordType RecordType `json:"record_type"`
+	Offset     uint64     `json:"aux_offset"`
+	Size       uint64     `json:"aux_size"`
+	Flags      uint64     `json:"flags"`
 	SampleID
 }
 
 func (rec *AuxRecord) Decode(raw *RawRecord, attr *Attr) {
 	parser := FieldParser(raw.Data)
 	rec.Header = raw.Header
+	rec.RecordType = AuxRec
 	parser.Uint64(&rec.Offset)
 	parser.Uint64(&rec.Size)
 	parser.Uint64(&rec.Flags)
 	parser.ParseSampleID(attr.Options.SampleIDAll, attr.SampleFormat, &rec.SampleID)
 }
 
-func (rec *AuxRecord) Process() {
-	logrus.Errorf("[AuxRecord] Offset [%d]", rec.Offset)
-}
-
 type ItraceStartRecord struct {
 	Header
-	Pid uint32
-	Tid uint32
+	RecordType RecordType `json:"record_type"`
+	Pid        uint32     `json:"pid"`
+	Tid        uint32     `json:"tid"`
 	SampleID
 }
 
 func (rec *ItraceStartRecord) Decode(raw *RawRecord, attr *Attr) {
 	parser := FieldParser(raw.Data)
 	rec.Header = raw.Header
+	rec.RecordType = ItraceStartRec
 	parser.Uint32(&rec.Pid)
 	parser.Uint32(&rec.Tid)
 	parser.ParseSampleID(attr.Options.SampleIDAll, attr.SampleFormat, &rec.SampleID)
 }
 
-func (rec *ItraceStartRecord) Process() {
-	logrus.Errorf("[ItraceStartRecord] Pid [%d]", rec.Pid)
-}
-
 type LostSamplesRecord struct {
 	Header
-	Lost uint64
+	RecordType RecordType `json:"record_type"`
+	Lost       uint64     `json:"lost"`
 	SampleID
 }
 
 func (rec *LostSamplesRecord) Decode(raw *RawRecord, attr *Attr) {
 	parser := FieldParser(raw.Data)
 	rec.Header = raw.Header
+	rec.RecordType = LostSamplesRec
 	parser.Uint64(&rec.Lost)
 	parser.ParseSampleID(attr.Options.SampleIDAll, attr.SampleFormat, &rec.SampleID)
 }
 
-func (rec *LostSamplesRecord) Process() {
-	logrus.Errorf("[LostSamplesRecord] Lost [%d]", rec.Lost)
-}
-
 type SwitchRecord struct {
 	Header
+	RecordType RecordType `json:"record_type"`
 	SampleID
 }
 
 func (rec *SwitchRecord) Decode(raw *RawRecord, attr *Attr) {
 	parser := FieldParser(raw.Data)
 	rec.Header = raw.Header
+	rec.RecordType = SwitchRec
 	parser.ParseSampleID(attr.Options.SampleIDAll, attr.SampleFormat, &rec.SampleID)
-}
-
-func (rec *SwitchRecord) Process() {
-	logrus.Errorf("[SwitchRecord]")
 }
 
 type SwitchCPUWideRecord struct {
 	Header
-	NextPrevPid uint32
-	NextPrevTid uint32
+	RecordType  RecordType `json:"record_type"`
+	NextPrevPid uint32     `json:"next_prev_pid"`
+	NextPrevTid uint32     `json:"next_prev_tid"`
 	SampleID
 }
 
 func (rec *SwitchCPUWideRecord) Decode(raw *RawRecord, attr *Attr) {
 	parser := FieldParser(raw.Data)
 	rec.Header = raw.Header
+	rec.RecordType = SwitchCPUWideRec
 	parser.Uint32(&rec.NextPrevPid)
 	parser.Uint32(&rec.NextPrevTid)
 	parser.ParseSampleID(attr.Options.SampleIDAll, attr.SampleFormat, &rec.SampleID)
 }
 
-func (rec *SwitchCPUWideRecord) Process() {
-	logrus.Errorf("[SwitchCPUWideRecord]")
-}
-
 type NamespacesContent struct {
-	Dev uint64
-	Ino uint64
+	Dev uint64 `json:"dev"`
+	Ino uint64 `json:"inode"`
 }
 
 type NamespacesRecord struct {
 	Header
-	Pid        uint32
-	Tid        uint32
-	Namespaces []NamespacesContent
+	RecordType RecordType          `json:"record_type"`
+	Pid        uint32              `json:"pid"`
+	Tid        uint32              `json:"tid"`
+	Namespaces []NamespacesContent `json:"namespaces"`
 	SampleID
 }
 
 func (rec *NamespacesRecord) Decode(raw *RawRecord, attr *Attr) {
 	parser := FieldParser(raw.Data)
 	rec.Header = raw.Header
+	rec.RecordType = NamespacesRec
 	parser.Uint32(&rec.Pid)
 	parser.Uint32(&rec.Tid)
 
@@ -667,10 +637,6 @@ func (rec *NamespacesRecord) Decode(raw *RawRecord, attr *Attr) {
 		parser.Uint64(&rec.Namespaces[i].Ino)
 	}
 	parser.ParseSampleID(attr.Options.SampleIDAll, attr.SampleFormat, &rec.SampleID)
-}
-
-func (rec *NamespacesRecord) Process() {
-	logrus.Errorf("[NamespacesRecord] Pid [%d]", rec.Pid)
 }
 
 type RecordParser struct {

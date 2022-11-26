@@ -1,6 +1,7 @@
 package perf
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"unsafe"
@@ -235,7 +236,7 @@ func (event *PerfEvent) handleReadContent() error {
 	return event.handleGroupReadContent()
 }
 
-func (event *PerfEvent) Profile(timeout chan bool) error {
+func (event *PerfEvent) Profile(ctx context.Context, outputPath string) error {
 	if err := event.Disable(); err != nil {
 		return err
 	}
@@ -247,10 +248,10 @@ func (event *PerfEvent) Profile(timeout chan bool) error {
 	}
 
 	if event.ringBufHandler != nil {
-		event.ringBufHandler.HandleRecords()
+		event.ringBufHandler.HandleRecords(outputPath)
 	}
 
-	<-timeout
+	<-ctx.Done()
 	if err := event.Disable(); err != nil {
 		logrus.Errorf("Failed to disable perf event [%s]", err.Error())
 	}

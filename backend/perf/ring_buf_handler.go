@@ -1,6 +1,7 @@
 package perf
 
 import (
+	"encoding/json"
 	"os"
 	"sync/atomic"
 	"time"
@@ -87,7 +88,21 @@ func (handler *RingBufHandler) poll() PollResp {
 	}
 }
 
-func (handler *RingBufHandler) parseRecords() error {
+func (handler *RingBufHandler) writeToFile(val string, outputPath string) error {
+	fp, err := os.OpenFile(outputPath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+	if err != nil {
+		return err
+	}
+	defer fp.Close()
+
+	val += "\n"
+	if _, err = fp.WriteString(val); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (handler *RingBufHandler) parseRecords(outputPath string) error {
 	parser := NewRecordParser(&handler.ringBuf, handler.attr)
 
 	for {
@@ -99,12 +114,20 @@ func (handler *RingBufHandler) parseRecords() error {
 		if rec == nil {
 			break
 		}
-		rec.Process()
+
+		bytes, err := json.Marshal(rec)
+		if err != nil {
+			logrus.Errorf(err.Error())
+			continue
+		}
+		if err = handler.writeToFile(string(bytes), outputPath); err != nil {
+			logrus.Errorf("Failed to write file [%s], err [%s]", outputPath, err.Error())
+		}
 	}
 	return nil
 }
 
-func (handler *RingBufHandler) handleRecords() {
+func (handler *RingBufHandler) handleRecords(outputPath string) {
 	for {
 		pollResp := handler.poll()
 		if pollResp.Term {
@@ -113,18 +136,18 @@ func (handler *RingBufHandler) handleRecords() {
 			logrus.Errorf("Failed to poll ring buffer [%s]", pollResp.Err.Error())
 		}
 
-		if err := handler.parseRecords(); err != nil {
+		if err := handler.parseRecords(outputPath); err != nil {
 			logrus.Errorf("Failed to get records from ring buffer [%s]", err.Error())
 		}
 	}
 
-	if err := handler.parseRecords(); err != nil {
+	if err := handler.parseRecords(outputPath); err != nil {
 		logrus.Errorf("Failed to get records from ring buffer [%s]", err.Error())
 	}
 }
 
-func (handler *RingBufHandler) HandleRecords() {
-	go handler.handleRecords()
+func (handler *RingBufHandler) HandleRecords(outputPath string) {
+	go handler.handleRecords(outputPath)
 }
 
 func (handler *RingBufHandler) Release() {

@@ -1,12 +1,9 @@
 package perf
 
 type GroupReadContent struct {
-	TimeEnabled uint64
-	TimeRunning uint64
-	Values      []struct {
-		Value uint64
-		ID    uint64
-	}
+	TimeEnabled uint64             `json:"time_enabled"`
+	TimeRunning uint64             `json:"time_running"`
+	Values      []ReadContentValue `json:"values"`
 }
 
 type Group struct {

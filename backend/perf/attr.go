@@ -36,14 +36,10 @@ type AttrConfigurator interface {
 	Configure(attr *Attr)
 }
 
-func (event HardwareEvent) GetAttr() *Attr {
-	return &Attr{
-		Type:   unix.PERF_TYPE_HARDWARE,
-		Config: uint64(event),
-		Options: Options{
-			Disabled: true,
-		},
-	}
+func (event HardwareEvent) SetAttr(attr *Attr) {
+	attr.Type = unix.PERF_TYPE_HARDWARE
+	attr.Config = uint64(event)
+	attr.Options.Disabled = true
 }
 
 func (event HardwareEvent) Configure(attr *Attr) {
@@ -67,14 +63,10 @@ const (
 	BpfOutput       SoftwareEvent = unix.PERF_COUNT_SW_BPF_OUTPUT
 )
 
-func (event SoftwareEvent) GetAttr() *Attr {
-	return &Attr{
-		Type:   unix.PERF_TYPE_SOFTWARE,
-		Config: uint64(event),
-		Options: Options{
-			Disabled: true,
-		},
-	}
+func (event SoftwareEvent) SetAttr(attr *Attr) {
+	attr.Type = unix.PERF_TYPE_SOFTWARE
+	attr.Config = uint64(event)
+	attr.Options.Disabled = true
 }
 
 func (event SoftwareEvent) Configure(attr *Attr) {
