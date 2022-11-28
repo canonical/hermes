@@ -17,8 +17,8 @@ var (
 )
 
 func init() {
-	flag.StringVar(&configDir, "config_dir", "./", "The path of config directory")
-	flag.StringVar(&outputDir, "output_dir", "./", "The path of output directory")
+	flag.StringVar(&configDir, "config_dir", "/root/config/", "The path of config directory")
+	flag.StringVar(&outputDir, "output_dir", "/var/log/collector/", "The path of output directory")
 	flag.Usage = usage
 }
 
