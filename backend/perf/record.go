@@ -6,6 +6,7 @@ import (
 	"sync/atomic"
 	"unsafe"
 
+	"github.com/yukariatlas/hermes/backend/symbol"
 	"golang.org/x/sys/unix"
 )
 
@@ -42,7 +43,7 @@ type RawRecord struct {
 }
 
 type Record interface {
-	Decode(raw *RawRecord, attr *Attr)
+	Decode(raw *RawRecord, attr *Attr, symbolizer *symbol.Symbolizer)
 }
 
 type SampleID struct {
@@ -68,7 +69,7 @@ type MmapRecord struct {
 	SampleID
 }
 
-func (rec *MmapRecord) Decode(raw *RawRecord, attr *Attr) {
+func (rec *MmapRecord) Decode(raw *RawRecord, attr *Attr, symbolizer *symbol.Symbolizer) {
 	parser := FieldParser(raw.Data)
 	rec.Header = raw.Header
 	rec.RecordType = MmapRec
@@ -89,7 +90,7 @@ type LostRecord struct {
 	SampleID
 }
 
-func (rec *LostRecord) Decode(raw *RawRecord, attr *Attr) {
+func (rec *LostRecord) Decode(raw *RawRecord, attr *Attr, symbolizer *symbol.Symbolizer) {
 	parser := FieldParser(raw.Data)
 	rec.Header = raw.Header
 	rec.RecordType = LostRec
@@ -107,7 +108,7 @@ type CommRecord struct {
 	SampleID
 }
 
-func (rec *CommRecord) Decode(raw *RawRecord, attr *Attr) {
+func (rec *CommRecord) Decode(raw *RawRecord, attr *Attr, symbolizer *symbol.Symbolizer) {
 	parser := FieldParser(raw.Data)
 	rec.Header = raw.Header
 	rec.RecordType = CommRec
@@ -128,7 +129,7 @@ type ExitRecord struct {
 	SampleID
 }
 
-func (rec *ExitRecord) Decode(raw *RawRecord, attr *Attr) {
+func (rec *ExitRecord) Decode(raw *RawRecord, attr *Attr, symbolizer *symbol.Symbolizer) {
 	parser := FieldParser(raw.Data)
 	rec.Header = raw.Header
 	rec.RecordType = ExitRec
@@ -149,7 +150,7 @@ type ThrottleRecord struct {
 	SampleID
 }
 
-func (rec *ThrottleRecord) Decode(raw *RawRecord, attr *Attr) {
+func (rec *ThrottleRecord) Decode(raw *RawRecord, attr *Attr, symbolizer *symbol.Symbolizer) {
 	parser := FieldParser(raw.Data)
 	rec.Header = raw.Header
 	rec.RecordType = ThrottleRec
@@ -168,7 +169,7 @@ type UnthrottleRecord struct {
 	SampleID
 }
 
-func (rec *UnthrottleRecord) Decode(raw *RawRecord, attr *Attr) {
+func (rec *UnthrottleRecord) Decode(raw *RawRecord, attr *Attr, symbolizer *symbol.Symbolizer) {
 	parser := FieldParser(raw.Data)
 	rec.Header = raw.Header
 	rec.RecordType = UnthrottleRec
@@ -189,7 +190,7 @@ type ForkRecord struct {
 	SampleID
 }
 
-func (rec *ForkRecord) Decode(raw *RawRecord, attr *Attr) {
+func (rec *ForkRecord) Decode(raw *RawRecord, attr *Attr, symbolizer *symbol.Symbolizer) {
 	parser := FieldParser(raw.Data)
 	rec.Header = raw.Header
 	rec.RecordType = ForkRec
@@ -221,7 +222,7 @@ type ReadRecord struct {
 	SampleID
 }
 
-func (rec *ReadRecord) Decode(raw *RawRecord, attr *Attr) {
+func (rec *ReadRecord) Decode(raw *RawRecord, attr *Attr, symbolizer *symbol.Symbolizer) {
 	parser := FieldParser(raw.Data)
 	rec.Header = raw.Header
 	rec.RecordType = ReadRec
@@ -240,7 +241,7 @@ type GroupReadRecord struct {
 	SampleID
 }
 
-func (rec *GroupReadRecord) Decode(raw *RawRecord, attr *Attr) {
+func (rec *GroupReadRecord) Decode(raw *RawRecord, attr *Attr, symbolizer *symbol.Symbolizer) {
 	parser := FieldParser(raw.Data)
 	rec.Header = raw.Header
 	rec.RecordType = ReadRec
@@ -274,11 +275,16 @@ func (entry *BranchEntry) Decode(from, to, flags uint64) {
 	}
 }
 
+type Instruction struct {
+	IP     uint64 `json:"ip"`
+	Symbol string `json:"symbol"`
+}
+
 type SampleRecord struct {
 	Header
 	RecordType       RecordType    `json:"record_type"`
 	Identifier       uint64        `json:"identifier"`
-	IP               uint64        `json:"ip"`
+	Inst             Instruction   `json:"instruction"`
 	Pid              uint32        `json:"pid"`
 	Tid              uint32        `json:"tid"`
 	Time             uint64        `json:"time"`
@@ -289,7 +295,7 @@ type SampleRecord struct {
 	_                uint32        `json:"res"`
 	Period           uint64        `json:"period"`
 	ReadContent      ReadContent   `json:"values"`
-	CallchainIps     []uint64      `json:"callchain_ips"`
+	CallchainInsts   []Instruction `json:"callchain_insts"`
 	RawData          []byte        `json:"raw_data"`
 	BranchStack      []BranchEntry `json:"lbr"`
 	RegsUserABI      uint64        `json:"regs_user_abi"`
@@ -307,12 +313,22 @@ type SampleRecord struct {
 	CodePageSize     uint64        `json:"code_page_size"`
 }
 
-func (rec *SampleRecord) Decode(raw *RawRecord, attr *Attr) {
+func getSymbol(symbolizer *symbol.Symbolizer, inst *Instruction) {
+	if inst.IP == 0 {
+		return
+	}
+	if symbol, err := symbolizer.Symbolize(inst.IP); err == nil {
+		inst.Symbol = symbol
+	}
+}
+
+func (rec *SampleRecord) Decode(raw *RawRecord, attr *Attr, symbolizer *symbol.Symbolizer) {
 	parser := FieldParser(raw.Data)
 	rec.Header = raw.Header
 	rec.RecordType = SampleRec
 	parser.Uint64Cond(attr.SampleFormat.Identifier, &rec.Identifier)
-	parser.Uint64Cond(attr.SampleFormat.IP, &rec.IP)
+	parser.Uint64Cond(attr.SampleFormat.IP, &rec.Inst.IP)
+	getSymbol(symbolizer, &rec.Inst)
 	parser.Uint32Cond(attr.SampleFormat.Tid, &rec.Pid)
 	parser.Uint32Cond(attr.SampleFormat.Tid, &rec.Tid)
 	parser.Uint64Cond(attr.SampleFormat.Time, &rec.Time)
@@ -329,9 +345,10 @@ func (rec *SampleRecord) Decode(raw *RawRecord, attr *Attr) {
 	if attr.SampleFormat.Callchain {
 		var nr uint64
 		parser.Uint64(&nr)
-		rec.CallchainIps = make([]uint64, nr)
+		rec.CallchainInsts = make([]Instruction, nr)
 		for i := 0; i < int(nr); i++ {
-			parser.Uint64(&rec.CallchainIps[i])
+			parser.Uint64(&rec.CallchainInsts[i].IP)
+			getSymbol(symbolizer, &rec.CallchainInsts[i])
 		}
 	}
 	if attr.SampleFormat.Raw {
@@ -386,7 +403,7 @@ type GroupSampleRecord struct {
 	Header
 	RecordType       RecordType       `json:"record_type"`
 	Identifier       uint64           `json:"identifier"`
-	IP               uint64           `json:"ip"`
+	Inst             Instruction      `json:"instruction"`
 	Pid              uint32           `json:"pid"`
 	Tid              uint32           `json:"tid"`
 	Time             uint64           `json:"time"`
@@ -397,7 +414,7 @@ type GroupSampleRecord struct {
 	_                uint32           `json:"res"`
 	Period           uint64           `json:"period"`
 	GroupReadContent GroupReadContent `json:"values"`
-	CallchainIps     []uint64         `json:"callchain_ips"`
+	CallchainInsts   []Instruction    `json:"callchain_insts"`
 	RawData          []byte           `json:"raw_data"`
 	BranchStack      []BranchEntry    `json:"lbr"`
 	RegsUserABI      uint64           `json:"regs_user_abi"`
@@ -415,12 +432,13 @@ type GroupSampleRecord struct {
 	CodePageSize     uint64           `json:"code_page_size"`
 }
 
-func (rec *GroupSampleRecord) Decode(raw *RawRecord, attr *Attr) {
+func (rec *GroupSampleRecord) Decode(raw *RawRecord, attr *Attr, symbolizer *symbol.Symbolizer) {
 	parser := FieldParser(raw.Data)
 	rec.Header = raw.Header
 	rec.RecordType = SampleRec
 	parser.Uint64Cond(attr.SampleFormat.Identifier, &rec.Identifier)
-	parser.Uint64Cond(attr.SampleFormat.IP, &rec.IP)
+	parser.Uint64Cond(attr.SampleFormat.IP, &rec.Inst.IP)
+	getSymbol(symbolizer, &rec.Inst)
 	parser.Uint32Cond(attr.SampleFormat.Tid, &rec.Pid)
 	parser.Uint32Cond(attr.SampleFormat.Tid, &rec.Tid)
 	parser.Uint64Cond(attr.SampleFormat.Time, &rec.Time)
@@ -437,9 +455,10 @@ func (rec *GroupSampleRecord) Decode(raw *RawRecord, attr *Attr) {
 	if attr.SampleFormat.Callchain {
 		var nr uint64
 		parser.Uint64(&nr)
-		rec.CallchainIps = make([]uint64, nr)
+		rec.CallchainInsts = make([]Instruction, nr)
 		for i := 0; i < int(nr); i++ {
-			parser.Uint64(&rec.CallchainIps[i])
+			parser.Uint64(&rec.CallchainInsts[i].IP)
+			getSymbol(symbolizer, &rec.CallchainInsts[i])
 		}
 	}
 	if attr.SampleFormat.Raw {
@@ -508,7 +527,7 @@ type Mmap2Record struct {
 	SampleID
 }
 
-func (rec *Mmap2Record) Decode(raw *RawRecord, attr *Attr) {
+func (rec *Mmap2Record) Decode(raw *RawRecord, attr *Attr, symbolizer *symbol.Symbolizer) {
 	parser := FieldParser(raw.Data)
 	rec.Header = raw.Header
 	rec.RecordType = Mmap2Rec
@@ -536,7 +555,7 @@ type AuxRecord struct {
 	SampleID
 }
 
-func (rec *AuxRecord) Decode(raw *RawRecord, attr *Attr) {
+func (rec *AuxRecord) Decode(raw *RawRecord, attr *Attr, symbolizer *symbol.Symbolizer) {
 	parser := FieldParser(raw.Data)
 	rec.Header = raw.Header
 	rec.RecordType = AuxRec
@@ -554,7 +573,7 @@ type ItraceStartRecord struct {
 	SampleID
 }
 
-func (rec *ItraceStartRecord) Decode(raw *RawRecord, attr *Attr) {
+func (rec *ItraceStartRecord) Decode(raw *RawRecord, attr *Attr, symbolizer *symbol.Symbolizer) {
 	parser := FieldParser(raw.Data)
 	rec.Header = raw.Header
 	rec.RecordType = ItraceStartRec
@@ -570,7 +589,7 @@ type LostSamplesRecord struct {
 	SampleID
 }
 
-func (rec *LostSamplesRecord) Decode(raw *RawRecord, attr *Attr) {
+func (rec *LostSamplesRecord) Decode(raw *RawRecord, attr *Attr, symbolizer *symbol.Symbolizer) {
 	parser := FieldParser(raw.Data)
 	rec.Header = raw.Header
 	rec.RecordType = LostSamplesRec
@@ -584,7 +603,7 @@ type SwitchRecord struct {
 	SampleID
 }
 
-func (rec *SwitchRecord) Decode(raw *RawRecord, attr *Attr) {
+func (rec *SwitchRecord) Decode(raw *RawRecord, attr *Attr, symbolizer *symbol.Symbolizer) {
 	parser := FieldParser(raw.Data)
 	rec.Header = raw.Header
 	rec.RecordType = SwitchRec
@@ -599,7 +618,7 @@ type SwitchCPUWideRecord struct {
 	SampleID
 }
 
-func (rec *SwitchCPUWideRecord) Decode(raw *RawRecord, attr *Attr) {
+func (rec *SwitchCPUWideRecord) Decode(raw *RawRecord, attr *Attr, symbolizer *symbol.Symbolizer) {
 	parser := FieldParser(raw.Data)
 	rec.Header = raw.Header
 	rec.RecordType = SwitchCPUWideRec
@@ -622,7 +641,7 @@ type NamespacesRecord struct {
 	SampleID
 }
 
-func (rec *NamespacesRecord) Decode(raw *RawRecord, attr *Attr) {
+func (rec *NamespacesRecord) Decode(raw *RawRecord, attr *Attr, symbolizer *symbol.Symbolizer) {
 	parser := FieldParser(raw.Data)
 	rec.Header = raw.Header
 	rec.RecordType = NamespacesRec
@@ -640,15 +659,21 @@ func (rec *NamespacesRecord) Decode(raw *RawRecord, attr *Attr) {
 }
 
 type RecordParser struct {
-	ringBuf *RingBuf
-	attr    *Attr
+	ringBuf    *RingBuf
+	attr       *Attr
+	symbolizer *symbol.Symbolizer
 }
 
-func NewRecordParser(ringBuf *RingBuf, attr *Attr) *RecordParser {
-	return &RecordParser{
-		ringBuf: ringBuf,
-		attr:    attr,
+func NewRecordParser(ringBuf *RingBuf, attr *Attr) (*RecordParser, error) {
+	symbolizer, err := symbol.NewSymbolizer()
+	if err != nil {
+		return nil, err
 	}
+	return &RecordParser{
+		ringBuf:    ringBuf,
+		attr:       attr,
+		symbolizer: symbolizer,
+	}, nil
 }
 
 func (parser *RecordParser) getRawRecord() *RawRecord {
@@ -724,7 +749,7 @@ func (parser *RecordParser) newRecord(raw *RawRecord) (Record, error) {
 	default:
 		return nil, fmt.Errorf("Unhandled type [%d]", int(raw.Header.Type))
 	}
-	rec.Decode(raw, parser.attr)
+	rec.Decode(raw, parser.attr, parser.symbolizer)
 	return rec, nil
 }
 

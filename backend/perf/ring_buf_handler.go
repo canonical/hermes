@@ -26,10 +26,11 @@ type RingBuf struct {
 }
 
 type RingBufHandler struct {
-	ringBuf RingBuf
+	ringBuf *RingBuf
 	perfFd  int
 	attr    *Attr
 	termFd  int
+	parser  *RecordParser
 	timeout chan time.Duration
 }
 
@@ -52,15 +53,22 @@ func NewRingBufHandler(perfFd int, attr *Attr) (*RingBufHandler, error) {
 		return nil, os.NewSyscallError("eventfd", err)
 	}
 
+	ringBuf := RingBuf{
+		Ring:     ring,
+		RingData: ring[metaPage.Data_offset:],
+		MetaPage: metaPage,
+	}
+	parser, err := NewRecordParser(&ringBuf, attr)
+	if err != nil {
+		return nil, err
+	}
+
 	return &RingBufHandler{
-		ringBuf: RingBuf{
-			Ring:     ring,
-			RingData: ring[metaPage.Data_offset:],
-			MetaPage: metaPage,
-		},
+		ringBuf: &ringBuf,
 		perfFd:  perfFd,
 		attr:    attr,
 		termFd:  termFd,
+		parser:  parser,
 		timeout: make(chan time.Duration),
 	}, nil
 }
@@ -103,10 +111,8 @@ func (handler *RingBufHandler) writeToFile(val string, outputPath string) error 
 }
 
 func (handler *RingBufHandler) parseRecords(outputPath string) error {
-	parser := NewRecordParser(&handler.ringBuf, handler.attr)
-
 	for {
-		rec, err := parser.GetRecord()
+		rec, err := handler.parser.GetRecord()
 		if err != nil {
 			logrus.Errorf("Failed to get record [%s]", err.Error())
 			return err
