@@ -1,0 +1,6 @@
+class: 0
+subTasks:
+  cpu_profile:
+    type: 2
+    content: "{\"timeout\":10}"
+start: cpu_profile
