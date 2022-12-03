@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"github.com/yukariatlas/hermes/backend/ftrace"
 )
 
@@ -37,6 +38,7 @@ func (instance *TaskTraceInstance) Execute(content string, outputPath string, fi
 
 	err = json.Unmarshal([]byte(content), &context)
 	if err != nil {
+		logrus.Errorf("Failed to unmarshal json, content [%s]", content)
 		return
 	}
 

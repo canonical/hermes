@@ -30,10 +30,11 @@ const (
 	Binary TaskType = iota
 	Trace
 	Profile
+	Ebpf
 )
 
 func (taskType TaskType) String() string {
-	return [...]string{"Binary", "Trace", "Profile"}[taskType]
+	return [...]string{"Binary", "Trace", "Profile", "Ebpf"}[taskType]
 }
 
 type SubTask struct {

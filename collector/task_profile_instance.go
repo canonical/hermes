@@ -41,6 +41,7 @@ func (instance *TaskProfileInstance) Execute(content string, outputPath string, 
 
 	err = json.Unmarshal([]byte(content), &profileContext)
 	if err != nil {
+		logrus.Errorf("Failed to unmarshal json, content [%s]", content)
 		return
 	}
 

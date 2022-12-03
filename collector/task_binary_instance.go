@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
+
+	"github.com/sirupsen/logrus"
 )
 
 type BinaryContext struct {
@@ -23,6 +25,7 @@ func (instance *TaskBinaryInstance) Execute(content string, outputPath string, f
 
 	err = json.Unmarshal([]byte(content), &context)
 	if err != nil {
+		logrus.Errorf("Failed to unmarshal json, content [%s]", content)
 		return
 	}
 

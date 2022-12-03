@@ -25,6 +25,8 @@ func getTaskInstance(taskType TaskType) (TaskInstance, error) {
 		return NewTaskTraceInstance()
 	case Profile:
 		return NewTaskProfileInstance()
+	case Ebpf:
+		return NewTaskEbpfInstance()
 	}
 
 	return nil, fmt.Errorf("Unhandled task type [%d]", taskType)
