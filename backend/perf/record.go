@@ -339,6 +339,7 @@ func (rec *SampleRecord) Decode(raw *RawRecord, attr *Attr, symbolizer *symbol.S
 	var reserved uint32
 	parser.Uint32Cond(attr.SampleFormat.CPU, &rec.CPU)
 	parser.Uint32Cond(attr.SampleFormat.CPU, &reserved)
+	parser.Uint64Cond(attr.SampleFormat.Period, &rec.Period)
 	if attr.SampleFormat.Read {
 		parser.ParseReadContent(attr.ReadFormat, &rec.ReadContent)
 	}
@@ -449,6 +450,7 @@ func (rec *GroupSampleRecord) Decode(raw *RawRecord, attr *Attr, symbolizer *sym
 	var reserved uint32
 	parser.Uint32Cond(attr.SampleFormat.CPU, &rec.CPU)
 	parser.Uint32Cond(attr.SampleFormat.CPU, &reserved)
+	parser.Uint64Cond(attr.SampleFormat.Period, &rec.Period)
 	if attr.SampleFormat.Read {
 		parser.ParseGroupReadContent(attr.ReadFormat, &rec.GroupReadContent)
 	}
@@ -689,16 +691,15 @@ func (parser *RecordParser) getRawRecord() *RawRecord {
 	raw.Header = *(*Header)(unsafe.Pointer(&buf.RingData[start]))
 	end := (tail + uint64(raw.Header.Size)) % uint64(len(buf.RingData))
 
-	var data []byte
+	start = (start + uint64(unsafe.Sizeof(raw.Header))) % uint64(len(buf.RingData))
+	raw.Data = make([]byte, raw.Header.Size-uint16(unsafe.Sizeof(raw.Header)))
 	if start > end {
-		data = make([]byte, raw.Header.Size)
-		n := copy(data, buf.RingData[start:])
-		copy(data[n:], buf.RingData[:int(raw.Header.Size)-n])
+		n := copy(raw.Data, buf.RingData[start:])
+		copy(raw.Data[n:], buf.RingData[:int(raw.Header.Size)-n])
 	} else {
-		data = buf.RingData[start:end]
+		copy(raw.Data, buf.RingData[start:end])
 	}
 
-	raw.Data = data[unsafe.Sizeof(raw.Header):]
 	atomic.AddUint64(&buf.MetaPage.Data_tail, uint64(raw.Header.Size))
 	return &raw
 }

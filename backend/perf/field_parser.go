@@ -1,16 +1,18 @@
 package perf
 
-import "unsafe"
+import (
+	"unsafe"
+)
 
 type FieldParser []byte
 
-func (parser *FieldParser) Advance(c int) {
+func (parser *FieldParser) advance(c int) {
 	*parser = (*parser)[c:]
 }
 
 func (parser *FieldParser) Uint64(val *uint64) {
 	*val = *(*uint64)(unsafe.Pointer(&(*parser)[0]))
-	parser.Advance(8)
+	parser.advance(8)
 }
 
 func (parser *FieldParser) Uint64Cond(cond bool, val *uint64) {
@@ -21,7 +23,7 @@ func (parser *FieldParser) Uint64Cond(cond bool, val *uint64) {
 
 func (parser *FieldParser) Uint32(val *uint32) {
 	*val = *(*uint32)(unsafe.Pointer(&(*parser)[0]))
-	parser.Advance(4)
+	parser.advance(4)
 }
 
 func (parser *FieldParser) Uint32Cond(cond bool, val *uint32) {
@@ -35,7 +37,7 @@ func (parser *FieldParser) String(val *string) {
 		if (*parser)[i] == 0 {
 			*val = string((*parser)[:i])
 			if i+1 <= len(*parser) {
-				parser.Advance(i + 1)
+				parser.advance(i + 1)
 			}
 			return
 		}
@@ -44,20 +46,20 @@ func (parser *FieldParser) String(val *string) {
 
 func (parser *FieldParser) BytesByUint32Size(val *[]byte) {
 	size := *(*uint32)(unsafe.Pointer(&(*parser)[0]))
-	parser.Advance(4)
+	parser.advance(4)
 	data := make([]byte, size)
 	copy(data, *parser)
 	*val = data
-	parser.Advance(int(size))
+	parser.advance(int(size))
 }
 
 func (parser *FieldParser) BytesByUint64Size(val *[]byte) {
 	size := *(*uint64)(unsafe.Pointer(&(*parser)[0]))
-	parser.Advance(8)
+	parser.advance(8)
 	data := make([]byte, size)
 	copy(data, *parser)
 	*parser = data
-	parser.Advance(int(size))
+	parser.advance(int(size))
 }
 
 func (parser *FieldParser) ParseSampleID(sampleIDAll bool, sampleFormat SampleFormat, sampleID *SampleID) {
@@ -70,7 +72,7 @@ func (parser *FieldParser) ParseSampleID(sampleIDAll bool, sampleFormat SampleFo
 	parser.Uint64Cond(sampleFormat.ID, &sampleID.ID)
 	parser.Uint64Cond(sampleFormat.StreamID, &sampleID.StreamID)
 	parser.Uint32Cond(sampleFormat.CPU, &sampleID.CPU)
-	parser.Advance(4)
+	parser.advance(4)
 	parser.Uint64Cond(sampleFormat.Identifier, &sampleID.Identifier)
 }
 
