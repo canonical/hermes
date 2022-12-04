@@ -120,7 +120,7 @@ func (loader *MemoryLoader) getDataRec(infoMap, statsMap *ebpf.Map, recs *map[ui
 	var info bpfInfoValue
 	infoIter := infoMap.Iterate()
 	for infoIter.Next(&addr, &info) {
-		rec, _ := (*recs)[info.Pid]
+		rec, _ := (*recs)[info.TgidPid]
 		if err := statsMap.Lookup(info.StackId, &rec.BytesOwned); err != nil {
 			logrus.Errorf("Failed to lookup stack id [%d] in stats map", info.StackId)
 			continue
@@ -135,7 +135,7 @@ func (loader *MemoryLoader) getDataRec(infoMap, statsMap *ebpf.Map, recs *map[ui
 			BytesAlloc: info.Size,
 			CallStack:  callStack[:idx],
 		})
-		(*recs)[info.Pid] = rec
+		(*recs)[info.TgidPid] = rec
 	}
 }
 

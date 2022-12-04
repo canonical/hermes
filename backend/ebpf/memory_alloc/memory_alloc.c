@@ -11,7 +11,7 @@ char __license[] SEC("license") = "Dual MIT/GPL";
 # define PAGE_SIZE 4096
 
 struct InfoValue {
-  u64 pid;
+  u64 tgid_pid;
   size_t size;
   u32 stack_id;
 };
@@ -96,7 +96,7 @@ int kmalloc(struct SlabKmallocInfo *ctx) {
   struct InfoValue info;
 
   __builtin_memset(&info, 0, sizeof(struct InfoValue));
-  info.pid = bpf_get_current_pid_tgid();
+  info.tgid_pid = bpf_get_current_pid_tgid();
   info.stack_id = bpf_get_stackid(ctx, &stack_trace, 0);
   info.size = ctx->bytes_alloc;
 
@@ -122,7 +122,7 @@ int kmalloc_node(struct SlabKmallocNodeInfo *ctx) {
   struct InfoValue info;
 
   __builtin_memset(&info, 0, sizeof(struct InfoValue));
-  info.pid = bpf_get_current_pid_tgid();
+  info.tgid_pid = bpf_get_current_pid_tgid();
   info.stack_id = bpf_get_stackid(ctx, &stack_trace, 0);
   info.size = ctx->bytes_alloc;
   return mem_alloc((size_t)ctx->ptr, &slab_info, &slab_stats, &info);
@@ -162,7 +162,7 @@ int kmem_cache_alloc(struct SlabKmemCacheAllocInfo *ctx) {
   struct InfoValue info;
 
   __builtin_memset(&info, 0, sizeof(struct InfoValue));
-  info.pid = bpf_get_current_pid_tgid();
+  info.tgid_pid = bpf_get_current_pid_tgid();
   info.stack_id = bpf_get_stackid(ctx, &stack_trace, 0);
   info.size = ctx->bytes_alloc;
   return mem_alloc((size_t)ctx->ptr, &slab_info, &slab_stats, &info);
@@ -187,7 +187,7 @@ int kmem_cache_alloc_node(struct SlabKmemCacheAllocNodeInfo *ctx) {
   struct InfoValue info;
 
   __builtin_memset(&info, 0, sizeof(struct InfoValue));
-  info.pid = bpf_get_current_pid_tgid();
+  info.tgid_pid = bpf_get_current_pid_tgid();
   info.stack_id = bpf_get_stackid(ctx, &stack_trace, 0);
   info.size = ctx->bytes_alloc;
   return mem_alloc((size_t)ctx->ptr, &slab_info, &slab_stats, &info);
@@ -226,7 +226,7 @@ int mm_page_alloc(struct PageAllocInfo *ctx) {
   struct InfoValue info;
 
   __builtin_memset(&info, 0, sizeof(struct InfoValue));
-  info.pid = bpf_get_current_pid_tgid();
+  info.tgid_pid = bpf_get_current_pid_tgid();
   info.stack_id = bpf_get_stackid(ctx, &stack_trace, 0);
   info.size = (PAGE_SIZE << ctx->order);
   return mem_alloc(ctx->pfn, &page_info, &page_stats, &info);
