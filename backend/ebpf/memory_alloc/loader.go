@@ -4,34 +4,34 @@ import (
 	"context"
 	"encoding/json"
 	"os"
-	"sort"
 
 	"github.com/cilium/ebpf"
 	"github.com/cilium/ebpf/link"
-	"github.com/cilium/ebpf/rlimit"
 	"github.com/sirupsen/logrus"
+	"github.com/yukariatlas/hermes/backend/symbol"
 )
 
 //go:generate go run github.com/cilium/ebpf/cmd/bpf2go -cc $BPF_CLANG -cflags $BPF_CFLAGS bpf memory_alloc.c -- -I../header
 
 type MemoryLoader struct {
-	objs *bpfObjects
+	objs       *bpfObjects
+	symbolizer *symbol.Symbolizer
 }
 
 func GetLoader() (*MemoryLoader, error) {
-	// Allow the current process to lock memory for eBPF resources.
-	if err := rlimit.RemoveMemlock(); err != nil {
-		return nil, err
-	}
-
 	// Load pre-compiled programs and maps into the kernel.
 	objs := bpfObjects{}
 	if err := loadBpfObjects(&objs, nil); err != nil {
 		return nil, err
 	}
+	symbolizer, err := symbol.NewSymbolizer()
+	if err != nil {
+		return nil, err
+	}
 
 	return &MemoryLoader{
-		objs: &objs,
+		objs:       &objs,
+		symbolizer: symbolizer,
 	}, nil
 }
 
@@ -106,8 +106,8 @@ const (
 )
 
 type AllocRecord struct {
-	BytesAlloc uint64   `json:"bytes_alloc"`
-	CallStack  []uint64 `json:"call_stack"`
+	BytesAlloc     uint64   `json:"bytes_alloc"`
+	CallchainInsts []string `json:"callchain_insts"`
 }
 
 type DataRecord struct {
@@ -125,16 +125,28 @@ func (loader *MemoryLoader) getDataRec(infoMap, statsMap *ebpf.Map, recs *map[ui
 			logrus.Errorf("Failed to lookup stack id [%d] in stats map", info.StackId)
 			continue
 		}
-		callStack := make([]uint64, CallStackSize)
-		if err := loader.objs.StackTrace.Lookup(info.StackId, &callStack); err != nil {
+
+		ips := make([]uint64, CallStackSize)
+		if err := loader.objs.StackTrace.Lookup(info.StackId, &ips); err != nil {
 			logrus.Errorf("Failed to lookup stack id [%d] in stack trace", info.StackId)
 			continue
 		}
-		idx := sort.Search(len(callStack), func(idx int) bool { return callStack[idx] == 0 })
-		rec.AllocRecs = append(rec.AllocRecs, AllocRecord{
-			BytesAlloc: info.Size,
-			CallStack:  callStack[:idx],
-		})
+
+		allocRec := AllocRecord{
+			BytesAlloc:     info.Size,
+			CallchainInsts: []string{},
+		}
+		for _, ip := range ips {
+			if ip == 0 {
+				break
+			}
+			symbol, err := loader.symbolizer.Symbolize(ip)
+			if err != nil {
+				symbol = ""
+			}
+			allocRec.CallchainInsts = append(allocRec.CallchainInsts, symbol)
+		}
+		rec.AllocRecs = append(rec.AllocRecs, allocRec)
 		(*recs)[info.TgidPid] = rec
 	}
 }

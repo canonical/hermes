@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/cilium/ebpf/rlimit"
 	"github.com/sirupsen/logrus"
 	"github.com/yukariatlas/hermes/backend/ebpf"
 )
@@ -45,6 +46,10 @@ func (instance *TaskEbpfInstance) Execute(content string, outputPath string, fin
 	waitGroup.Add(1)
 	go func() {
 		defer waitGroup.Done()
+		// Allow the current process to lock memory for eBPF resources.
+		if err := rlimit.RemoveMemlock(); err != nil {
+			return
+		}
 		if err := loader.Load(ctx); err != nil {
 			return
 		}
