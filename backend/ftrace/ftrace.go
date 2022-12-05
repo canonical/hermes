@@ -64,7 +64,7 @@ func (ftrace *Ftrace) redirectTracePipe(outputPath string) (chan bool, error) {
 		return nil, err
 	}
 
-	pipe, err := os.Open(filepath.Join(traceFsDir, "trace_pipe"))
+	pipe, err := os.Open(filepath.Join(traceFsDir, tracePipe))
 	if err != nil {
 		return nil, err
 	}

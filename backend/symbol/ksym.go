@@ -45,13 +45,13 @@ func unsafeString(bytes []byte) string {
 }
 
 func (cache *KsymCache) LoadSymbols() error {
-	fd, err := os.Open(KallsymsProcEntry)
+	fp, err := os.Open(KallsymsProcEntry)
 	if err != nil {
 		return err
 	}
-	defer fd.Close()
+	defer fp.Close()
 
-	scanner := bufio.NewScanner(fd)
+	scanner := bufio.NewScanner(fp)
 
 	for scanner.Scan() {
 		data := scanner.Bytes()
