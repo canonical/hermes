@@ -31,7 +31,7 @@ func NewTaskTraceInstance() (TaskInstance, error) {
 		ftrace: ftrace}, nil
 }
 
-func (instance *TaskTraceInstance) Process(param string, paramOverride string, outputPath string, finish chan error) {
+func (instance *TaskTraceInstance) Process(param, paramOverride, outputPath string, finish chan error) {
 	context := TraceContext{}
 	err := errors.New("")
 	defer func() { finish <- err }()

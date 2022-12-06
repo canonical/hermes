@@ -1,6 +1,9 @@
 class: 0
 routines:
   memory_profile:
+    condition:
+      task: psi
+      param_override: "{\"type\":1,\"full\":[-1,-1,0]}"
     content:
       task: memory_ebpf
 start: memory_profile

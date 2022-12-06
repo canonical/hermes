@@ -22,15 +22,15 @@ const (
 	IOPSI
 )
 
-type Avgs struct {
+type PSIAvgs struct {
 	Avg10  float64
 	Avg60  float64
 	Avg300 float64
 }
 
 type PSIResult struct {
-	Some Avgs
-	Full Avgs
+	Some PSIAvgs
+	Full PSIAvgs
 }
 
 type PSI struct{}
@@ -48,10 +48,11 @@ func (psi *PSI) getEntry(psiType PSIType) (string, error) {
 	}
 }
 
-func (psi *PSI) parseAvgs(tokens []string, avgs *Avgs) {
+func (psi *PSI) parseAvgs(tokens []string, avgs *PSIAvgs) {
 	for _, token := range tokens {
 		vals := strings.Split(token, "=")
-		if val, err := strconv.ParseFloat(vals[1], 64); err != nil {
+		val, err := strconv.ParseFloat(vals[1], 64)
+		if err != nil {
 			logrus.Errorf("Failed to parse avgs [%s], err [%s]", token, err)
 			continue
 		}
@@ -83,7 +84,7 @@ func (psi *PSI) getResult(path string) (*PSIResult, error) {
 			continue
 		}
 
-		var avgs *Avgs
+		var avgs *PSIAvgs
 		if tokens[0] == "some" {
 			avgs = &psiResult.Some
 		} else if tokens[0] == "full" {

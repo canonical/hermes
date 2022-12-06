@@ -23,7 +23,7 @@ func NewTaskEbpfInstance() (TaskInstance, error) {
 	return &TaskEbpfInstance{}, nil
 }
 
-func (instance *TaskEbpfInstance) Process(param string, paramOverride string, outputPath string, finish chan error) {
+func (instance *TaskEbpfInstance) Process(param, paramOverride, outputPath string, finish chan error) {
 	ebpfContext := EbpfContext{}
 	err := errors.New("")
 	defer func() { finish <- err }()

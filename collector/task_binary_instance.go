@@ -18,7 +18,7 @@ func NewTaskBinaryInstance() (TaskInstance, error) {
 	return &TaskBinaryInstance{}, nil
 }
 
-func (instance *TaskBinaryInstance) Process(param string, paramOverride string, outputPath string, finish chan error) {
+func (instance *TaskBinaryInstance) Process(param, paramOverride, outputPath string, finish chan error) {
 	context := BinaryContext{}
 	err := errors.New("")
 	defer func() { finish <- err }()

@@ -34,7 +34,7 @@ func (instance *TaskProfileInstance) profile(ctx context.Context, cpu int, attr 
 	perfEvent.Profile(ctx, outputPath)
 }
 
-func (instance *TaskProfileInstance) Process(param string, paramOverride string, outputPath string, finish chan error) {
+func (instance *TaskProfileInstance) Process(param, paramOverride, outputPath string, finish chan error) {
 	profileContext := ProfileContext{}
 	err := errors.New("")
 	defer func() { finish <- err }()
