@@ -18,15 +18,22 @@ func NewTaskBinaryInstance() (TaskInstance, error) {
 	return &TaskBinaryInstance{}, nil
 }
 
-func (instance *TaskBinaryInstance) Execute(content string, outputPath string, finish chan error) {
+func (instance *TaskBinaryInstance) Process(param string, paramOverride string, outputPath string, finish chan error) {
 	context := BinaryContext{}
 	err := errors.New("")
 	defer func() { finish <- err }()
 
-	err = json.Unmarshal([]byte(content), &context)
+	err = json.Unmarshal([]byte(param), &context)
 	if err != nil {
-		logrus.Errorf("Failed to unmarshal json, content [%s]", content)
+		logrus.Errorf("Failed to unmarshal json, param [%s]", param)
 		return
+	}
+	if paramOverride != "" {
+		err = json.Unmarshal([]byte(paramOverride), &context)
+		if err != nil {
+			logrus.Errorf("Failed to unmarshal json, paramOverride [%s]", paramOverride)
+			return
+		}
 	}
 
 	env := map[string]string{

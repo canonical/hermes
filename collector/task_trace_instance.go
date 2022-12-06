@@ -31,15 +31,22 @@ func NewTaskTraceInstance() (TaskInstance, error) {
 		ftrace: ftrace}, nil
 }
 
-func (instance *TaskTraceInstance) Execute(content string, outputPath string, finish chan error) {
+func (instance *TaskTraceInstance) Process(param string, paramOverride string, outputPath string, finish chan error) {
 	context := TraceContext{}
 	err := errors.New("")
 	defer func() { finish <- err }()
 
-	err = json.Unmarshal([]byte(content), &context)
+	err = json.Unmarshal([]byte(param), &context)
 	if err != nil {
-		logrus.Errorf("Failed to unmarshal json, content [%s]", content)
+		logrus.Errorf("Failed to unmarshal json, param [%s]", param)
 		return
+	}
+	if paramOverride != "" {
+		err = json.Unmarshal([]byte(paramOverride), &context)
+		if err != nil {
+			logrus.Errorf("Failed to unmarshal json, paramOverride [%s]", paramOverride)
+			return
+		}
 	}
 
 	err = instance.ftrace.Enable(context.CurrentTracer, context.TraceOptions, context.SetEvent, context.SetFtraceFilter)

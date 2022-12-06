@@ -33,17 +33,17 @@ func main() {
 
 	flag.Parse()
 
-	taskQueue, err := collector.NewTaskQueue()
+	jobQueue, err := collector.NewJobQueue()
 	if err != nil {
 		logrus.Fatal(err)
 	}
 
-	configWatcher, err := collector.NewConfigWatcher(taskQueue.Comm)
+	configWatcher, err := collector.NewConfigWatcher(jobQueue.Comm)
 	if err != nil {
 		logrus.Fatal(err)
 	}
 
-	taskQueue.Run(ctx, outputDir)
+	jobQueue.Run(ctx, outputDir)
 
 	configWatcher.Run(ctx, configDir)
 	defer configWatcher.Release()

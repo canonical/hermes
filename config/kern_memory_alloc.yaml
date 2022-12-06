@@ -1,0 +1,6 @@
+class: 0
+routines:
+  memory_profile:
+    content:
+      task: memory_ebpf
+start: memory_profile

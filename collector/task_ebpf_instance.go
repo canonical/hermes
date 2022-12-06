@@ -23,15 +23,22 @@ func NewTaskEbpfInstance() (TaskInstance, error) {
 	return &TaskEbpfInstance{}, nil
 }
 
-func (instance *TaskEbpfInstance) Execute(content string, outputPath string, finish chan error) {
+func (instance *TaskEbpfInstance) Process(param string, paramOverride string, outputPath string, finish chan error) {
 	ebpfContext := EbpfContext{}
 	err := errors.New("")
 	defer func() { finish <- err }()
 
-	err = json.Unmarshal([]byte(content), &ebpfContext)
+	err = json.Unmarshal([]byte(param), &ebpfContext)
 	if err != nil {
-		logrus.Errorf("Failed to unmarshal json, content [%s]", content)
+		logrus.Errorf("Failed to unmarshal json, param [%s]", param)
 		return
+	}
+	if paramOverride != "" {
+		err = json.Unmarshal([]byte(paramOverride), &ebpfContext)
+		if err != nil {
+			logrus.Errorf("Failed to unmarshal json, paramOverride [%s]", paramOverride)
+			return
+		}
 	}
 
 	loader, err := ebpf.GetLoader(ebpfContext.LoaderType)

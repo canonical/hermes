@@ -1,0 +1,6 @@
+class: 0
+routines:
+  profile:
+    content:
+      task: cpu_profile
+start: profile

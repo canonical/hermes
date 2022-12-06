@@ -1,6 +1,0 @@
-class: 0
-subTasks:
-  memory_ebpf:
-    type: 3
-    content: "{\"timeout\":5,\"loader_type\":0}"
-start: memory_ebpf

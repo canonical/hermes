@@ -10,19 +10,19 @@ import (
 )
 
 type ConfigWatcher struct {
-	taskQueueComm TaskQueueComm
-	watcher       *fsnotify.Watcher
+	jobQueueComm JobQueueComm
+	watcher      *fsnotify.Watcher
 }
 
-func NewConfigWatcher(taskQueueComm TaskQueueComm) (*ConfigWatcher, error) {
+func NewConfigWatcher(jobQueueComm JobQueueComm) (*ConfigWatcher, error) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return nil, err
 	}
 
 	return &ConfigWatcher{
-		taskQueueComm: taskQueueComm,
-		watcher:       watcher}, nil
+		jobQueueComm: jobQueueComm,
+		watcher:      watcher}, nil
 }
 
 func (watcher *ConfigWatcher) initConfigs(configDir string) error {
@@ -45,18 +45,18 @@ func (watcher *ConfigWatcher) initConfigs(configDir string) error {
 }
 
 func (watcher *ConfigWatcher) handleConfig(op fsnotify.Op, configPath string) error {
-	task, err := NewTask(configPath)
+	job, err := NewJob(configPath)
 	if err != nil {
 		return err
 	}
 
 	switch op {
 	case fsnotify.Create:
-		watcher.taskQueueComm.AddTask <- *task
+		watcher.jobQueueComm.AddJob <- *job
 	case fsnotify.Remove:
-		watcher.taskQueueComm.RemoveTask <- task.Name
+		watcher.jobQueueComm.RemoveJob <- job.Name
 	}
-	return <-watcher.taskQueueComm.Ack
+	return <-watcher.jobQueueComm.Ack
 }
 
 func (watcher *ConfigWatcher) Run(ctx context.Context, configDir string) error {

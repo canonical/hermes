@@ -34,15 +34,22 @@ func (instance *TaskProfileInstance) profile(ctx context.Context, cpu int, attr 
 	perfEvent.Profile(ctx, outputPath)
 }
 
-func (instance *TaskProfileInstance) Execute(content string, outputPath string, finish chan error) {
+func (instance *TaskProfileInstance) Process(param string, paramOverride string, outputPath string, finish chan error) {
 	profileContext := ProfileContext{}
 	err := errors.New("")
 	defer func() { finish <- err }()
 
-	err = json.Unmarshal([]byte(content), &profileContext)
+	err = json.Unmarshal([]byte(param), &profileContext)
 	if err != nil {
-		logrus.Errorf("Failed to unmarshal json, content [%s]", content)
+		logrus.Errorf("Failed to unmarshal json, param [%s]", param)
 		return
+	}
+	if paramOverride != "" {
+		err = json.Unmarshal([]byte(paramOverride), &profileContext)
+		if err != nil {
+			logrus.Errorf("Failed to unmarshal json, paramOverride [%s]", paramOverride)
+			return
+		}
 	}
 
 	attr := perf.Attr{
