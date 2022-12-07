@@ -1,4 +1,5 @@
-class: 0
+class: 1
+interval: 15
 routines:
   memory_profile:
     condition:
