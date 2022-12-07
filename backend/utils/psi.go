@@ -23,14 +23,14 @@ const (
 )
 
 type PSIAvgs struct {
-	Avg10  float64
-	Avg60  float64
-	Avg300 float64
+	Avg10  float64 `json:"avg10"`
+	Avg60  float64 `json:"avg60"`
+	Avg300 float64 `json:"avg300"`
 }
 
 type PSIResult struct {
-	Some PSIAvgs
-	Full PSIAvgs
+	Some PSIAvgs `json:"some"`
+	Full PSIAvgs `json:"full"`
 }
 
 type PSI struct{}

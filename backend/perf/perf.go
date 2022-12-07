@@ -253,7 +253,7 @@ func (event *PerfEvent) Profile(ctx context.Context, outputPath string) error {
 
 	<-ctx.Done()
 	if err := event.Disable(); err != nil {
-		logrus.Errorf("Failed to disable perf event [%s]", err.Error())
+		logrus.Errorf("Failed to disable perf event [%s]", err)
 	}
 	if event.ringBufHandler != nil {
 		event.sendTermToRingBuf()

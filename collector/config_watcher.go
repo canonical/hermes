@@ -62,7 +62,7 @@ func (watcher *ConfigWatcher) handleConfig(op fsnotify.Op, configPath string) er
 func (watcher *ConfigWatcher) Run(ctx context.Context, configDir string) error {
 	go func() {
 		if err := watcher.initConfigs(configDir); err != nil {
-			logrus.Error(err.Error())
+			logrus.Error(err)
 		}
 
 		monitorOps := map[fsnotify.Op]bool{

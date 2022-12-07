@@ -44,7 +44,7 @@ func (runner *JobRunner) newJob(job Job) {
 
 	outputDir, err := runner.prepareOutputDir(timestamp, job.Name)
 	if err != nil {
-		logrus.Error(err.Error())
+		logrus.Error(err)
 		return
 	}
 
@@ -74,7 +74,7 @@ func (runner *JobRunner) newJob(job Job) {
 			return
 		case err := <-finish:
 			if err != nil {
-				logrus.Errorf("Task [%s] failed, err [%s].", routineName, err.Error())
+				logrus.Errorf("Task [%s] failed, err [%s].", routineName, err)
 				return
 			}
 		}

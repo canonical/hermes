@@ -26,7 +26,7 @@ func NewTaskProfileInstance() (TaskInstance, error) {
 func (instance *TaskProfileInstance) profile(ctx context.Context, cpu int, attr *perf.Attr, outputPath string) {
 	perfEvent, err := perf.NewPerfEvent(attr, perf.AllThreads, cpu)
 	if err != nil {
-		logrus.Error(err.Error())
+		logrus.Error(err)
 		return
 	}
 

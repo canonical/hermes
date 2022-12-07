@@ -19,7 +19,7 @@ func NewSymbolizer() (*Symbolizer, error) {
 func (symbolizer *Symbolizer) Symbolize(addr uint64) (string, error) {
 	symbol, err := symbolizer.ksymCache.Resolve(addr)
 	if err != nil {
-		logrus.Errorf("Failed to resolve symbol, err [%s]", err.Error())
+		logrus.Errorf("Failed to resolve symbol, err [%s]", err)
 		return "", err
 	}
 	return symbol, nil

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 
 	"github.com/sirupsen/logrus"
 	"github.com/yukariatlas/hermes/backend/utils"
@@ -38,6 +39,23 @@ func (instance *TaskPSIInstance) isBeyondExpectation(psiAvgs *utils.PSIAvgs, exp
 	return false
 }
 
+func (instance *TaskPSIInstance) writeToFile(psiResult *utils.PSIResult, outputPath string) error {
+	bytes, err := json.Marshal(psiResult)
+	if err != nil {
+		return err
+	}
+	fp, err := os.OpenFile(outputPath, os.O_WRONLY|os.O_CREATE, 0644)
+	if err != nil {
+		return err
+	}
+	defer fp.Close()
+
+	if _, err = fp.WriteString(string(bytes)); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (instance *TaskPSIInstance) Process(param, paramOverride, outputPath string, finish chan error) {
 	psiContext := PSIContext{}
 	err := errors.New("")
@@ -59,6 +77,10 @@ func (instance *TaskPSIInstance) Process(param, paramOverride, outputPath string
 	var psi utils.PSI
 	psiResult, err := psi.GetSystemLevel(psiContext.Type)
 	if err != nil {
+		return
+	}
+	if err = instance.writeToFile(psiResult, outputPath+string(".psi")); err != nil {
+		logrus.Errorf("Failed to write PSI result, err [%s]", err)
 		return
 	}
 

@@ -114,7 +114,7 @@ func (handler *RingBufHandler) parseRecords(outputPath string) error {
 	for {
 		rec, err := handler.parser.GetRecord()
 		if err != nil {
-			logrus.Errorf("Failed to get record [%s]", err.Error())
+			logrus.Errorf("Failed to get record [%s]", err)
 			return err
 		}
 		if rec == nil {
@@ -127,7 +127,7 @@ func (handler *RingBufHandler) parseRecords(outputPath string) error {
 			continue
 		}
 		if err = handler.writeToFile(string(bytes), outputPath); err != nil {
-			logrus.Errorf("Failed to write file [%s], err [%s]", outputPath, err.Error())
+			logrus.Errorf("Failed to write file [%s], err [%s]", outputPath, err)
 		}
 	}
 	return nil
@@ -139,16 +139,16 @@ func (handler *RingBufHandler) handleRecords(outputPath string) {
 		if pollResp.Term {
 			break
 		} else if pollResp.Err != nil {
-			logrus.Errorf("Failed to poll ring buffer [%s]", pollResp.Err.Error())
+			logrus.Errorf("Failed to poll ring buffer [%s]", pollResp.Err)
 		}
 
 		if err := handler.parseRecords(outputPath); err != nil {
-			logrus.Errorf("Failed to get records from ring buffer [%s]", err.Error())
+			logrus.Errorf("Failed to get records from ring buffer [%s]")
 		}
 	}
 
 	if err := handler.parseRecords(outputPath); err != nil {
-		logrus.Errorf("Failed to get records from ring buffer [%s]", err.Error())
+		logrus.Errorf("Failed to get records from ring buffer [%s]", err)
 	}
 }
 

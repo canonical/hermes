@@ -57,7 +57,7 @@ func (cache *KsymCache) LoadSymbols() error {
 		data := scanner.Bytes()
 		addr, err := strconv.ParseUint(unsafeString(data[:16]), 16, 64)
 		if err != nil {
-			logrus.Errorf("Failed to parse kallsym data, err [%s]", err.Error())
+			logrus.Errorf("Failed to parse kallsym data, err [%s]", err)
 			continue
 		}
 

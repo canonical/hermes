@@ -80,7 +80,7 @@ func (ftrace *Ftrace) redirectTracePipe(outputPath string) (chan bool, error) {
 		scanner.Split(bufio.ScanLines)
 		for scanner.Scan() {
 			if _, err := fp.WriteString(scanner.Text() + "\n"); err != nil {
-				logrus.Error(err.Error())
+				logrus.Error(err)
 				break
 			}
 		}

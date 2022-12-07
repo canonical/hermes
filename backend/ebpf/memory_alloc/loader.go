@@ -182,13 +182,13 @@ func (loader *MemoryLoader) writeToFile(outputPath string, recs *map[uint64]Data
 func (loader *MemoryLoader) StoreData(outputPath string) error {
 	recs := loader.getDataRecByType(Slab)
 	if err := loader.writeToFile(outputPath+string(".slab"), recs); err != nil {
-		logrus.Errorf("Failed to write slab records to file, err [%s]", err.Error())
+		logrus.Errorf("Failed to write slab records to file, err [%s]", err)
 		return err
 	}
 
 	recs = loader.getDataRecByType(Page)
 	if err := loader.writeToFile(outputPath+string(".page"), recs); err != nil {
-		logrus.Errorf("Failed to write page records to file, err [%s]", err.Error())
+		logrus.Errorf("Failed to write page records to file, err [%s]", err)
 		return err
 	}
 	return nil
