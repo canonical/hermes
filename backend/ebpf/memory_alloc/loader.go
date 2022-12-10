@@ -112,7 +112,23 @@ type AllocRecord struct {
 
 type DataRecord struct {
 	BytesOwned uint64        `json:"bytes_owned"`
+	Comm       string        `json:"comm"`
 	AllocRecs  []AllocRecord `json:"alloc_records"`
+}
+
+func uint8ToString(val []uint8) string {
+	bytes := []byte{}
+	for _, _byte := range val {
+		if _byte == 0 {
+			break
+		}
+		bytes = append(bytes, byte(_byte))
+	}
+
+	if len(bytes) == 0 {
+		return string("unknown")
+	}
+	return string(bytes)
 }
 
 func (loader *MemoryLoader) getDataRec(infoMap, statsMap *ebpf.Map, recs *map[uint64]DataRecord) {
@@ -146,6 +162,7 @@ func (loader *MemoryLoader) getDataRec(infoMap, statsMap *ebpf.Map, recs *map[ui
 			}
 			allocRec.CallchainInsts = append(allocRec.CallchainInsts, symbol)
 		}
+		rec.Comm = uint8ToString(info.Comm[:])
 		rec.AllocRecs = append(rec.AllocRecs, allocRec)
 		(*recs)[info.TgidPid] = rec
 	}

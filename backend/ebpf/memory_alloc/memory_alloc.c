@@ -8,10 +8,12 @@ char __license[] SEC("license") = "Dual MIT/GPL";
 
 #define MAX_ENTRIES 1000000
 #define PERF_MAX_STACK_DEPTH 127
-# define PAGE_SIZE 4096
+#define PAGE_SIZE 4096
+#define TASK_COMM_LEN 16
 
 struct InfoValue {
   u64 tgid_pid;
+  unsigned char comm[TASK_COMM_LEN];
   size_t size;
   u32 stack_id;
 };
@@ -97,6 +99,7 @@ int kmalloc(struct SlabKmallocInfo *ctx) {
 
   __builtin_memset(&info, 0, sizeof(struct InfoValue));
   info.tgid_pid = bpf_get_current_pid_tgid();
+  bpf_get_current_comm(&info.comm, sizeof(info.comm));
   info.stack_id = bpf_get_stackid(ctx, &stack_trace, 0);
   info.size = ctx->bytes_alloc;
 
