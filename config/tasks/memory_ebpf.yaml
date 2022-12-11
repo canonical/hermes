@@ -1,2 +1,2 @@
 type: 4
-param: "{\"timeout\":5,\"loader_type\":0}"
+param: "{\"timeout\":5,\"ebpf_type\":0}"

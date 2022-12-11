@@ -7,10 +7,10 @@ import (
 	memory "github.com/yukariatlas/hermes/backend/ebpf/memory_alloc"
 )
 
-type LoaderType uint32
+type EbpfType uint32
 
 const (
-	Memory LoaderType = iota
+	Memory EbpfType = iota
 )
 
 type Loader interface {
@@ -19,11 +19,11 @@ type Loader interface {
 	Close()
 }
 
-func GetLoader(loaderType LoaderType) (Loader, error) {
-	switch loaderType {
+func GetLoader(ebpfType EbpfType) (Loader, error) {
+	switch ebpfType {
 	case Memory:
 		return memory.GetLoader()
 	}
 
-	return nil, fmt.Errorf("Unahndled loader type [%d]", loaderType)
+	return nil, fmt.Errorf("Unahndled ebpf type [%d]", ebpfType)
 }

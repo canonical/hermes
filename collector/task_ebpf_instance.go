@@ -13,8 +13,8 @@ import (
 )
 
 type EbpfContext struct {
-	Timeout    uint32          `json:"timeout"`
-	LoaderType ebpf.LoaderType `json:"loader_type"`
+	Timeout  uint32        `json:"timeout"`
+	EbpfType ebpf.EbpfType `json:"ebpf_type"`
 }
 
 type TaskEbpfInstance struct{}
@@ -41,7 +41,7 @@ func (instance *TaskEbpfInstance) Process(param, paramOverride, outputPath strin
 		}
 	}
 
-	loader, err := ebpf.GetLoader(ebpfContext.LoaderType)
+	loader, err := ebpf.GetLoader(ebpfContext.EbpfType)
 	if err != nil {
 		return
 	}
