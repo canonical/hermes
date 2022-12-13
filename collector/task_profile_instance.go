@@ -3,7 +3,7 @@ package collector
 import (
 	"context"
 	"encoding/json"
-	"errors"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"sync"
@@ -11,6 +11,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/yukariatlas/hermes/backend/perf"
+	"github.com/yukariatlas/hermes/parser"
 )
 
 type ProfileContext struct {
@@ -30,14 +31,18 @@ func (instance *TaskProfileInstance) profile(ctx context.Context, cpu int, attr 
 		return
 	}
 
-	outputPath += string(".") + strconv.Itoa(cpu)
 	perfEvent.Profile(ctx, outputPath)
 }
 
-func (instance *TaskProfileInstance) Process(param, paramOverride, outputPath string, finish chan error) {
+func (instance *TaskProfileInstance) Process(param, paramOverride, outputPath string, result chan TaskResult) {
 	profileContext := ProfileContext{}
-	err := errors.New("")
-	defer func() { finish <- err }()
+	taskResult := TaskResult{
+		Err:         nil,
+		ParserType:  parser.None,
+		OutputFiles: []string{},
+	}
+	err := taskResult.Err
+	defer func() { result <- taskResult }()
 
 	err = json.Unmarshal([]byte(param), &profileContext)
 	if err != nil {
@@ -67,10 +72,12 @@ func (instance *TaskProfileInstance) Process(param, paramOverride, outputPath st
 	defer cancel()
 	for cpu := 0; cpu < runtime.NumCPU(); cpu++ {
 		waitGroup.Add(1)
-		go func(cpu int) {
+		path := outputPath + string(".") + strconv.Itoa(cpu)
+		taskResult.OutputFiles = append(taskResult.OutputFiles, filepath.Base(path))
+		go func(cpu int, path string) {
 			defer waitGroup.Done()
-			instance.profile(ctx, cpu, &attr, outputPath)
-		}(cpu)
+			instance.profile(ctx, cpu, &attr, path)
+		}(cpu, path)
 	}
 
 	waitGroup.Wait()

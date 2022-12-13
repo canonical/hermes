@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+	"github.com/yukariatlas/hermes/parser"
 )
 
 type JobRunner struct {
@@ -36,6 +37,7 @@ func (runner *JobRunner) prepareOutputDir(timestamp int64, jobName string) (stri
 }
 
 func (runner *JobRunner) newJob(job Job) {
+	var logMeta parser.LogMetadata
 	timestamp := time.Now().Unix()
 	runner.jobsInProcess.Store(job.Name, timestamp)
 	defer runner.jobsInProcess.Delete(job.Name)
@@ -62,23 +64,37 @@ func (runner *JobRunner) newJob(job Job) {
 			return
 		}
 
-		if err := task.Condition(outputPath); err != nil {
+		if taskResult := task.Condition(outputPath); taskResult.Err != nil {
 			routineName = routine.CondFail
 			continue
+		} else if len(taskResult.OutputFiles) > 0 {
+			logMeta.Metas = append(logMeta.Metas, parser.Metadata{
+				Type: taskResult.ParserType,
+				Logs: taskResult.OutputFiles,
+			})
 		}
 
-		finish := make(chan error)
-		task.Process(outputPath, finish)
+		result := make(chan TaskResult)
+		task.Process(outputPath, result)
 		select {
 		case <-runner.quit:
 			return
-		case err := <-finish:
-			if err != nil {
-				logrus.Errorf("Task [%s] failed, err [%s].", routineName, err)
+		case taskResult := <-result:
+			if taskResult.Err != nil {
+				logrus.Errorf("Task [%s] failed, err [%s].", routineName, taskResult.Err)
 				return
+			} else if len(taskResult.OutputFiles) > 0 {
+				logMeta.Metas = append(logMeta.Metas, parser.Metadata{
+					Type: taskResult.ParserType,
+					Logs: taskResult.OutputFiles,
+				})
 			}
 		}
 		routineName = routine.CondSucc
+	}
+
+	if err := logMeta.ToFile(outputDir); err != nil {
+		logrus.Errorf("Failed to save metadata, err [%s]", err)
 	}
 }
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"os"
+	"path/filepath"
 
 	"github.com/cilium/ebpf"
 	"github.com/cilium/ebpf/link"
@@ -14,8 +15,9 @@ import (
 //go:generate go run github.com/cilium/ebpf/cmd/bpf2go -cc $BPF_CLANG -cflags $BPF_CFLAGS bpf memory_alloc.c -- -I../header
 
 type MemoryLoader struct {
-	objs       *bpfObjects
-	symbolizer *symbol.Symbolizer
+	objs        *bpfObjects
+	symbolizer  *symbol.Symbolizer
+	outputFiles []string
 }
 
 func GetLoader() (*MemoryLoader, error) {
@@ -30,8 +32,9 @@ func GetLoader() (*MemoryLoader, error) {
 	}
 
 	return &MemoryLoader{
-		objs:       &objs,
-		symbolizer: symbolizer,
+		objs:        &objs,
+		symbolizer:  symbolizer,
+		outputFiles: []string{},
 	}, nil
 }
 
@@ -198,17 +201,26 @@ func (loader *MemoryLoader) writeToFile(outputPath string, recs *map[uint64]Data
 
 func (loader *MemoryLoader) StoreData(outputPath string) error {
 	recs := loader.getDataRecByType(Slab)
-	if err := loader.writeToFile(outputPath+string(".slab"), recs); err != nil {
+	slabOutputFile := outputPath + string(".slab")
+	if err := loader.writeToFile(slabOutputFile, recs); err != nil {
 		logrus.Errorf("Failed to write slab records to file, err [%s]", err)
 		return err
 	}
+	loader.outputFiles = append(loader.outputFiles, filepath.Base(slabOutputFile))
 
 	recs = loader.getDataRecByType(Page)
-	if err := loader.writeToFile(outputPath+string(".page"), recs); err != nil {
+	pageOutputFile := outputPath + string(".page")
+	if err := loader.writeToFile(pageOutputFile, recs); err != nil {
 		logrus.Errorf("Failed to write page records to file, err [%s]", err)
 		return err
 	}
+	loader.outputFiles = append(loader.outputFiles, filepath.Base(pageOutputFile))
+
 	return nil
+}
+
+func (loader *MemoryLoader) GetOutputFiles() []string {
+	return loader.outputFiles
 }
 
 func (loader *MemoryLoader) Close() {

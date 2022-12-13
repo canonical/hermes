@@ -2,10 +2,10 @@ package collector
 
 import (
 	"encoding/json"
-	"errors"
 	"os"
 
 	"github.com/sirupsen/logrus"
+	"github.com/yukariatlas/hermes/parser"
 )
 
 type BinaryContext struct {
@@ -18,10 +18,15 @@ func NewTaskBinaryInstance() (TaskInstance, error) {
 	return &TaskBinaryInstance{}, nil
 }
 
-func (instance *TaskBinaryInstance) Process(param, paramOverride, outputPath string, finish chan error) {
+func (instance *TaskBinaryInstance) Process(param, paramOverride, outputPath string, result chan TaskResult) {
 	context := BinaryContext{}
-	err := errors.New("")
-	defer func() { finish <- err }()
+	taskResult := TaskResult{
+		Err:         nil,
+		ParserType:  parser.None,
+		OutputFiles: []string{},
+	}
+	err := taskResult.Err
+	defer func() { result <- taskResult }()
 
 	err = json.Unmarshal([]byte(param), &context)
 	if err != nil {

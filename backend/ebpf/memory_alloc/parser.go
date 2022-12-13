@@ -7,17 +7,17 @@ import (
 	"os"
 )
 
-type MemoryParser struct {
+type MemoryEbpfParser struct {
 	Recs map[uint64]DataRecord
 }
 
-func GetParser() (*MemoryParser, error) {
-	return &MemoryParser{
+func GetMemoryEbpfParser() (*MemoryEbpfParser, error) {
+	return &MemoryEbpfParser{
 		Recs: make(map[uint64]DataRecord),
 	}, nil
 }
 
-func (parser *MemoryParser) getStackCollapsedData(pid uint32, comm string, allocRec *AllocRecord) string {
+func (parser *MemoryEbpfParser) getStackCollapsedData(pid uint32, comm string, allocRec *AllocRecord) string {
 	data := fmt.Sprintf("%s;", comm)
 	for i := len(allocRec.CallchainInsts) - 1; i >= 0; i-- {
 		data += fmt.Sprintf("%s;", allocRec.CallchainInsts[i])
@@ -27,7 +27,7 @@ func (parser *MemoryParser) getStackCollapsedData(pid uint32, comm string, alloc
 	return data
 }
 
-func (parser *MemoryParser) writeStackCollapsedData(outputPath string) error {
+func (parser *MemoryEbpfParser) writeStackCollapsedData(outputPath string) error {
 	fp, err := os.OpenFile(outputPath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
 		return err
@@ -55,16 +55,22 @@ func (parser *MemoryParser) writeStackCollapsedData(outputPath string) error {
 	return nil
 }
 
-func (parser *MemoryParser) Parse(path string) error {
-	data, err := ioutil.ReadFile(path)
-	if err != nil {
-		return err
+func (parser *MemoryEbpfParser) Parse(dir string, logs []string) error {
+	for _, log := range logs {
+		path := dir + string("/") + log
+		data, err := ioutil.ReadFile(path)
+		if err != nil {
+			return err
+		}
+
+		if err := json.Unmarshal(data, &parser.Recs); err != nil {
+			return err
+		}
+
+		if err := parser.writeStackCollapsedData(path + string(".stack.collapsed")); err != nil {
+			return err
+		}
 	}
 
-	err = json.Unmarshal(data, &parser.Recs)
-	if err != nil {
-		return err
-	}
-
-	return parser.writeStackCollapsedData(path + string(".stack.collapsed"))
+	return nil
 }

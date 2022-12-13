@@ -16,6 +16,7 @@ const (
 type Loader interface {
 	Load(context context.Context) error
 	StoreData(outputPath string) error
+	GetOutputFiles() []string
 	Close()
 }
 

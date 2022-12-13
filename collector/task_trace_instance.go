@@ -2,11 +2,11 @@ package collector
 
 import (
 	"encoding/json"
-	"errors"
 	"time"
 
 	"github.com/sirupsen/logrus"
 	"github.com/yukariatlas/hermes/backend/ftrace"
+	"github.com/yukariatlas/hermes/parser"
 )
 
 type TraceContext struct {
@@ -31,10 +31,15 @@ func NewTaskTraceInstance() (TaskInstance, error) {
 		ftrace: ftrace}, nil
 }
 
-func (instance *TaskTraceInstance) Process(param, paramOverride, outputPath string, finish chan error) {
+func (instance *TaskTraceInstance) Process(param, paramOverride, outputPath string, result chan TaskResult) {
 	context := TraceContext{}
-	err := errors.New("")
-	defer func() { finish <- err }()
+	taskResult := TaskResult{
+		Err:         nil,
+		ParserType:  parser.None,
+		OutputFiles: []string{},
+	}
+	err := taskResult.Err
+	defer func() { result <- taskResult }()
 
 	err = json.Unmarshal([]byte(param), &context)
 	if err != nil {

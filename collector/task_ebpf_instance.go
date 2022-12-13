@@ -3,13 +3,12 @@ package collector
 import (
 	"context"
 	"encoding/json"
-	"errors"
-	"sync"
 	"time"
 
 	"github.com/cilium/ebpf/rlimit"
 	"github.com/sirupsen/logrus"
 	"github.com/yukariatlas/hermes/backend/ebpf"
+	"github.com/yukariatlas/hermes/parser"
 )
 
 type EbpfContext struct {
@@ -23,10 +22,23 @@ func NewTaskEbpfInstance() (TaskInstance, error) {
 	return &TaskEbpfInstance{}, nil
 }
 
-func (instance *TaskEbpfInstance) Process(param, paramOverride, outputPath string, finish chan error) {
+func (instance *TaskEbpfInstance) getParserType(ebpfType ebpf.EbpfType) parser.ParserType {
+	switch ebpfType {
+	case ebpf.Memory:
+		return parser.MemoryEbpf
+	}
+	return parser.None
+}
+
+func (instance *TaskEbpfInstance) Process(param, paramOverride, outputPath string, result chan TaskResult) {
 	ebpfContext := EbpfContext{}
-	err := errors.New("")
-	defer func() { finish <- err }()
+	taskResult := TaskResult{
+		Err:         nil,
+		ParserType:  parser.None,
+		OutputFiles: []string{},
+	}
+	err := taskResult.Err
+	defer func() { result <- taskResult }()
 
 	err = json.Unmarshal([]byte(param), &ebpfContext)
 	if err != nil {
@@ -46,25 +58,21 @@ func (instance *TaskEbpfInstance) Process(param, paramOverride, outputPath strin
 		return
 	}
 
-	var waitGroup sync.WaitGroup
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(ebpfContext.Timeout)*time.Second)
 	defer cancel()
 
-	waitGroup.Add(1)
-	go func() {
-		defer waitGroup.Done()
-		// Allow the current process to lock memory for eBPF resources.
-		if err := rlimit.RemoveMemlock(); err != nil {
-			return
-		}
-		if err := loader.Load(ctx); err != nil {
-			return
-		}
-		if err := loader.StoreData(outputPath); err != nil {
-			return
-		}
-		loader.Close()
-	}()
+	// Allow the current process to lock memory for eBPF resources.
+	if err := rlimit.RemoveMemlock(); err != nil {
+		return
+	}
+	if err := loader.Load(ctx); err != nil {
+		return
+	}
+	if err := loader.StoreData(outputPath); err != nil {
+		return
+	}
+	loader.Close()
 
-	waitGroup.Wait()
+	taskResult.ParserType = instance.getParserType(ebpfContext.EbpfType)
+	taskResult.OutputFiles = loader.GetOutputFiles()
 }

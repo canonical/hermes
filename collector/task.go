@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 
+	"github.com/yukariatlas/hermes/parser"
 	"gopkg.in/yaml.v2"
 )
 
@@ -31,8 +32,14 @@ type TaskContext struct {
 	ParamOverride string
 }
 
+type TaskResult struct {
+	Err         error
+	ParserType  parser.ParserType
+	OutputFiles []string
+}
+
 type TaskInstance interface {
-	Process(param string, param_oevrride string, outputPath string, finish chan error)
+	Process(param string, param_oevrride string, outputPath string, result chan TaskResult)
 }
 
 type Task struct {
@@ -92,30 +99,42 @@ func (task *Task) getInstance(taskType TaskType) (TaskInstance, error) {
 	return nil, fmt.Errorf("Unhandled task type [%d]", taskType)
 }
 
-func (task *Task) execute(context *TaskContext, outputPath string, finish chan error) {
+func (task *Task) execute(context *TaskContext, outputPath string, result chan TaskResult) {
 	instance, err := task.getInstance(context.Type)
 	if err != nil {
-		finish <- err
+		result <- TaskResult{
+			Err:         err,
+			ParserType:  parser.None,
+			OutputFiles: []string{},
+		}
 		return
 	}
 
-	instance.Process(context.Param, context.ParamOverride, outputPath, finish)
+	instance.Process(context.Param, context.ParamOverride, outputPath, result)
 }
 
-func (task *Task) Condition(outputPath string) error {
+func (task *Task) Condition(outputPath string) TaskResult {
 	if task.Cond.Type == None {
-		return nil
+		return TaskResult{
+			Err:         nil,
+			ParserType:  parser.None,
+			OutputFiles: []string{},
+		}
 	}
 
-	finish := make(chan error)
-	go task.execute(&task.Cond, outputPath, finish)
-	return <-finish
+	result := make(chan TaskResult)
+	go task.execute(&task.Cond, outputPath, result)
+	return <-result
 }
 
-func (task *Task) Process(outputPath string, finish chan error) {
+func (task *Task) Process(outputPath string, result chan TaskResult) {
 	if task.Task.Type == None {
-		finish <- nil
+		result <- TaskResult{
+			Err:         nil,
+			ParserType:  parser.None,
+			OutputFiles: []string{},
+		}
 		return
 	}
-	go task.execute(&task.Task, outputPath, finish)
+	go task.execute(&task.Task, outputPath, result)
 }

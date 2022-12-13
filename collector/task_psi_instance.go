@@ -2,12 +2,12 @@ package collector
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 
 	"github.com/sirupsen/logrus"
 	"github.com/yukariatlas/hermes/backend/utils"
+	"github.com/yukariatlas/hermes/parser"
 )
 
 type PSIContext struct {
@@ -39,7 +39,7 @@ func (instance *TaskPSIInstance) isBeyondExpectation(psiAvgs *utils.PSIAvgs, exp
 	return false
 }
 
-func (instance *TaskPSIInstance) writeToFile(psiResult *utils.PSIResult, outputPath string) error {
+func (instance *TaskPSIInstance) ToFile(psiResult *utils.PSIResult, outputPath string) error {
 	bytes, err := json.Marshal(psiResult)
 	if err != nil {
 		return err
@@ -56,10 +56,15 @@ func (instance *TaskPSIInstance) writeToFile(psiResult *utils.PSIResult, outputP
 	return nil
 }
 
-func (instance *TaskPSIInstance) Process(param, paramOverride, outputPath string, finish chan error) {
+func (instance *TaskPSIInstance) Process(param, paramOverride, outputPath string, result chan TaskResult) {
 	psiContext := PSIContext{}
-	err := errors.New("")
-	defer func() { finish <- err }()
+	taskResult := TaskResult{
+		Err:         nil,
+		ParserType:  parser.None,
+		OutputFiles: []string{},
+	}
+	err := taskResult.Err
+	defer func() { result <- taskResult }()
 
 	err = json.Unmarshal([]byte(param), &psiContext)
 	if err != nil {
@@ -79,7 +84,8 @@ func (instance *TaskPSIInstance) Process(param, paramOverride, outputPath string
 	if err != nil {
 		return
 	}
-	if err = instance.writeToFile(psiResult, outputPath+string(".psi")); err != nil {
+	err = instance.ToFile(psiResult, outputPath+string(".psi"))
+	if err != nil {
 		logrus.Errorf("Failed to write PSI result, err [%s]", err)
 		return
 	}
