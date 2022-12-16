@@ -55,10 +55,10 @@ func (parser *MemoryEbpfParser) writeStackCollapsedData(outputPath string) error
 	return nil
 }
 
-func (parser *MemoryEbpfParser) Parse(dir string, logs []string) error {
+func (parser *MemoryEbpfParser) Parse(logDir string, logs []string, outputDir string) error {
 	for _, log := range logs {
-		path := dir + string("/") + log
-		data, err := ioutil.ReadFile(path)
+		logPath := logDir + string("/") + log
+		data, err := ioutil.ReadFile(logPath)
 		if err != nil {
 			return err
 		}
@@ -67,7 +67,8 @@ func (parser *MemoryEbpfParser) Parse(dir string, logs []string) error {
 			return err
 		}
 
-		if err := parser.writeStackCollapsedData(path + string(".stack.collapsed")); err != nil {
+		outputPath := outputDir + string("/") + log + string(".stack.collapsed")
+		if err := parser.writeStackCollapsedData(outputPath); err != nil {
 			return err
 		}
 	}

@@ -3,21 +3,23 @@ package parser
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 
 	"gopkg.in/yaml.v2"
 )
 
 type ParserInstance interface {
-	Parse(dir string, logs []string) error
+	Parse(logDir string, logs []string, outputDir string) error
 }
 
 type Parser struct {
-	dir     string
-	logMeta LogMetadata
+	logDir    string
+	outputDir string
+	logMeta   LogMetadata
 }
 
-func NewParser(metaPath string) (*Parser, error) {
+func NewParser(metaPath string, outputDir string) (*Parser, error) {
 	data, err := ioutil.ReadFile(metaPath)
 	if err != nil {
 		return nil, err
@@ -28,7 +30,10 @@ func NewParser(metaPath string) (*Parser, error) {
 		return nil, err
 	}
 
-	parser.dir = filepath.Dir(metaPath)
+	parser.logDir = filepath.Dir(metaPath)
+	taskName := filepath.Base(parser.logDir)
+	timestamp := filepath.Base(filepath.Dir(parser.logDir))
+	parser.outputDir = outputDir + string("/") + taskName + string("/") + timestamp
 	return &parser, nil
 }
 
@@ -54,7 +59,10 @@ func (parser *Parser) Parse() error {
 			return nil
 		}
 
-		if err := instance.Parse(parser.dir, meta.Logs); err != nil {
+		if err := os.MkdirAll(parser.outputDir, os.ModePerm); err != nil {
+			return err
+		}
+		if err := instance.Parse(parser.logDir, meta.Logs, parser.outputDir); err != nil {
 			return err
 		}
 	}
