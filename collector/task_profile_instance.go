@@ -9,9 +9,10 @@ import (
 	"sync"
 	"time"
 
+	"hermes/backend/perf"
+	"hermes/parser"
+
 	"github.com/sirupsen/logrus"
-	"github.com/yukariatlas/hermes/backend/perf"
-	"github.com/yukariatlas/hermes/parser"
 )
 
 type ProfileContext struct {

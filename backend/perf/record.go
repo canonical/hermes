@@ -6,7 +6,8 @@ import (
 	"sync/atomic"
 	"unsafe"
 
-	"github.com/yukariatlas/hermes/backend/symbol"
+	"hermes/backend/symbol"
+
 	"golang.org/x/sys/unix"
 )
 

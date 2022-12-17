@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"os"
 
+	"hermes/backend/utils"
+	"hermes/parser"
+
 	"github.com/sirupsen/logrus"
-	"github.com/yukariatlas/hermes/backend/utils"
-	"github.com/yukariatlas/hermes/parser"
 )
 
 type PSIContext struct {

@@ -5,7 +5,8 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/yukariatlas/hermes/parser"
+	"hermes/parser"
+
 	"gopkg.in/yaml.v2"
 )
 

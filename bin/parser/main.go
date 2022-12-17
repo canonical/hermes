@@ -6,8 +6,9 @@ import (
 	"os"
 	"path/filepath"
 
+	"hermes/parser"
+
 	"github.com/sirupsen/logrus"
-	"github.com/yukariatlas/hermes/parser"
 )
 
 var (

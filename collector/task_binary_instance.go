@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"os"
 
+	"hermes/parser"
+
 	"github.com/sirupsen/logrus"
-	"github.com/yukariatlas/hermes/parser"
 )
 
 type BinaryContext struct {

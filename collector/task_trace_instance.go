@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"time"
 
+	"hermes/backend/ftrace"
+	"hermes/parser"
+
 	"github.com/sirupsen/logrus"
-	"github.com/yukariatlas/hermes/backend/ftrace"
-	"github.com/yukariatlas/hermes/parser"
 )
 
 type TraceContext struct {

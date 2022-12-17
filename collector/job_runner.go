@@ -9,8 +9,9 @@ import (
 	"sync"
 	"time"
 
+	"hermes/parser"
+
 	"github.com/sirupsen/logrus"
-	"github.com/yukariatlas/hermes/parser"
 )
 
 type JobRunner struct {

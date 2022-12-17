@@ -5,10 +5,11 @@ import (
 	"encoding/json"
 	"time"
 
+	"hermes/backend/ebpf"
+	"hermes/parser"
+
 	"github.com/cilium/ebpf/rlimit"
 	"github.com/sirupsen/logrus"
-	"github.com/yukariatlas/hermes/backend/ebpf"
-	"github.com/yukariatlas/hermes/parser"
 )
 
 type EbpfContext struct {

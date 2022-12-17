@@ -1,0 +1,7 @@
+syntax = "proto3";
+package hermes.proto.schema;
+option go_package = "hermes/";
+
+message Tasks {
+  repeated string tasks = 1;
+}

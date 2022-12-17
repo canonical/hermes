@@ -7,8 +7,9 @@ import (
 	"os"
 	"os/signal"
 
+	"hermes/collector"
+
 	"github.com/sirupsen/logrus"
-	"github.com/yukariatlas/hermes/collector"
 )
 
 var (

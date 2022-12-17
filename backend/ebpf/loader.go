@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	memory "github.com/yukariatlas/hermes/backend/ebpf/memory_alloc"
+	memory "hermes/backend/ebpf/memory_alloc"
 )
 
 type EbpfType uint32

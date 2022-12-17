@@ -3,7 +3,7 @@ package parser
 import (
 	"fmt"
 
-	memory "github.com/yukariatlas/hermes/backend/ebpf/memory_alloc"
+	memory "hermes/backend/ebpf/memory_alloc"
 )
 
 func GetEbpfParser(parserType ParserType) (ParserInstance, error) {

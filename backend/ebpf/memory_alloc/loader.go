@@ -6,10 +6,11 @@ import (
 	"os"
 	"path/filepath"
 
+	"hermes/backend/symbol"
+
 	"github.com/cilium/ebpf"
 	"github.com/cilium/ebpf/link"
 	"github.com/sirupsen/logrus"
-	"github.com/yukariatlas/hermes/backend/symbol"
 )
 
 //go:generate go run github.com/cilium/ebpf/cmd/bpf2go -cc $BPF_CLANG -cflags $BPF_CFLAGS bpf memory_alloc.c -- -I../header
