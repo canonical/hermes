@@ -2,6 +2,7 @@ package collector
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 
@@ -64,8 +65,11 @@ func (instance *TaskPSIInstance) Process(param, paramOverride, outputPath string
 		ParserType:  parser.None,
 		OutputFiles: []string{},
 	}
-	err := taskResult.Err
-	defer func() { result <- taskResult }()
+	err := errors.New("")
+	defer func() {
+		taskResult.Err = err
+		result <- taskResult
+	}()
 
 	err = json.Unmarshal([]byte(param), &psiContext)
 	if err != nil {

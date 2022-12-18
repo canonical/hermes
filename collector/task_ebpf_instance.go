@@ -3,6 +3,7 @@ package collector
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"time"
 
 	"hermes/backend/ebpf"
@@ -38,8 +39,11 @@ func (instance *TaskEbpfInstance) Process(param, paramOverride, outputPath strin
 		ParserType:  parser.None,
 		OutputFiles: []string{},
 	}
-	err := taskResult.Err
-	defer func() { result <- taskResult }()
+	err := errors.New("")
+	defer func() {
+		taskResult.Err = err
+		result <- taskResult
+	}()
 
 	err = json.Unmarshal([]byte(param), &ebpfContext)
 	if err != nil {

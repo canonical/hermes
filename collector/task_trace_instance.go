@@ -2,6 +2,7 @@ package collector
 
 import (
 	"encoding/json"
+	"errors"
 	"time"
 
 	"hermes/backend/ftrace"
@@ -39,8 +40,11 @@ func (instance *TaskTraceInstance) Process(param, paramOverride, outputPath stri
 		ParserType:  parser.None,
 		OutputFiles: []string{},
 	}
-	err := taskResult.Err
-	defer func() { result <- taskResult }()
+	err := errors.New("")
+	defer func() {
+		taskResult.Err = err
+		result <- taskResult
+	}()
 
 	err = json.Unmarshal([]byte(param), &context)
 	if err != nil {

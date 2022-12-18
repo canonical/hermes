@@ -3,6 +3,7 @@ package collector
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"path/filepath"
 	"runtime"
 	"strconv"
@@ -42,8 +43,11 @@ func (instance *TaskProfileInstance) Process(param, paramOverride, outputPath st
 		ParserType:  parser.None,
 		OutputFiles: []string{},
 	}
-	err := taskResult.Err
-	defer func() { result <- taskResult }()
+	err := errors.New("")
+	defer func() {
+		taskResult.Err = err
+		result <- taskResult
+	}()
 
 	err = json.Unmarshal([]byte(param), &profileContext)
 	if err != nil {

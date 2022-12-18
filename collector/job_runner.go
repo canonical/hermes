@@ -65,14 +65,20 @@ func (runner *JobRunner) newJob(job Job) {
 			return
 		}
 
-		if taskResult := task.Condition(outputPath); taskResult.Err != nil {
+		taskResult := task.Condition(outputPath)
+		condFail := false
+		if taskResult.Err != nil {
+			condFail = true
 			routineName = routine.CondFail
-			continue
-		} else if len(taskResult.OutputFiles) > 0 {
+		}
+		if len(taskResult.OutputFiles) > 0 {
 			logMeta.Metas = append(logMeta.Metas, parser.Metadata{
 				Type: taskResult.ParserType,
 				Logs: taskResult.OutputFiles,
 			})
+		}
+		if condFail {
+			continue
 		}
 
 		result := make(chan TaskResult)
@@ -80,7 +86,7 @@ func (runner *JobRunner) newJob(job Job) {
 		select {
 		case <-runner.quit:
 			return
-		case taskResult := <-result:
+		case taskResult = <-result:
 			if taskResult.Err != nil {
 				logrus.Errorf("Task [%s] failed, err [%s].", routineName, taskResult.Err)
 				return
