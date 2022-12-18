@@ -19,10 +19,11 @@ const (
 	Profile
 	Ebpf
 	PSI
+	MemoryInfo
 )
 
 func (taskType TaskType) String() string {
-	return [...]string{"Binary", "Trace", "Profile", "Ebpf", "PSI"}[taskType]
+	return [...]string{"Binary", "Trace", "Profile", "Ebpf", "PSI", "MemoryInfo"}[taskType]
 }
 
 const taskConfigDir = "/root/config/tasks/"
@@ -95,6 +96,8 @@ func (task *Task) getInstance(taskType TaskType) (TaskInstance, error) {
 		return NewTaskEbpfInstance()
 	case PSI:
 		return NewTaskPSIInstance()
+	case MemoryInfo:
+		return NewMemoryInfoInstance()
 	}
 
 	return nil, fmt.Errorf("Unhandled task type [%d]", taskType)

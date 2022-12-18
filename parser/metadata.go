@@ -12,6 +12,7 @@ type ParserType uint32
 
 const (
 	None ParserType = iota
+	MemoryInfo
 	MemoryEbpf
 )
 
