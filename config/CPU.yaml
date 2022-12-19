@@ -4,7 +4,7 @@ routines:
   profile:
     condition:
       task: psi
-      param_override: "{\"type\":0,\"some\":[-1,-1,0]}"
+      param_override: '{"type":0,"some":[-1,-1,0]}'
     content:
       task: cpu_profile
 start: profile
