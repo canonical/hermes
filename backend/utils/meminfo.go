@@ -2,7 +2,6 @@ package utils
 
 import (
 	"bufio"
-	"encoding/json"
 	"os"
 	"strconv"
 	"strings"
@@ -10,9 +9,7 @@ import (
 
 const MemInfoEntry = "/proc/meminfo"
 
-type MemInfo struct {
-	Infos map[string]uint64
-}
+type MemInfo map[string]uint64
 
 func GetMemInfo() (*MemInfo, error) {
 	file, err := os.Open(MemInfoEntry)
@@ -21,9 +18,7 @@ func GetMemInfo() (*MemInfo, error) {
 	}
 	defer file.Close()
 
-	memInfo := MemInfo{
-		Infos: make(map[string]uint64),
-	}
+	memInfo := make(MemInfo)
 	scanner := bufio.NewScanner(file)
 
 	for scanner.Scan() {
@@ -37,25 +32,8 @@ func GetMemInfo() (*MemInfo, error) {
 		if err != nil {
 			continue
 		}
-		memInfo.Infos[tokens[0]] = percent
+		memInfo[tokens[0]] = percent
 	}
 
 	return &memInfo, nil
-}
-
-func (memInfo *MemInfo) ToFile(path string) error {
-	bytes, err := json.Marshal(*memInfo)
-	if err != nil {
-		return err
-	}
-	fp, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE, 0644)
-	if err != nil {
-		return err
-	}
-	defer fp.Close()
-
-	if _, err = fp.WriteString(string(bytes)); err != nil {
-		return err
-	}
-	return nil
 }

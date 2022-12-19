@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"hermes/backend/utils"
 	"hermes/parser"
+	"os"
 	"path/filepath"
 
 	"github.com/sirupsen/logrus"
@@ -15,6 +16,8 @@ const MemTotal = "MemTotal"
 
 type MemoryInfoContext struct {
 	Thresholds map[string]uint64 `json:"thresholds"`
+	MemInfo    *utils.MemInfo    `json:"memInfo"`
+	Triggered  bool              `json:"triggered"`
 }
 
 type TaskMemoryInfoInstance struct{}
@@ -23,14 +26,14 @@ func NewMemoryInfoInstance() (TaskInstance, error) {
 	return &TaskMemoryInfoInstance{}, nil
 }
 
-func (instance *TaskMemoryInfoInstance) isBeyondExpectation(memInfo *utils.MemInfo, context *MemoryInfoContext) bool {
-	memTotal, isExist := memInfo.Infos[MemTotal]
+func (instance *TaskMemoryInfoInstance) isBeyondExpectation(context *MemoryInfoContext) bool {
+	memTotal, isExist := (*context.MemInfo)[MemTotal]
 	if !isExist {
 		return false
 	}
 
 	for entry, percent := range context.Thresholds {
-		val, isExist := memInfo.Infos[entry]
+		val, isExist := (*context.MemInfo)[entry]
 		if !isExist {
 			continue
 		}
@@ -40,6 +43,23 @@ func (instance *TaskMemoryInfoInstance) isBeyondExpectation(memInfo *utils.MemIn
 	}
 
 	return false
+}
+
+func (instance *TaskMemoryInfoInstance) writeToFile(context *MemoryInfoContext, path string) error {
+	bytes, err := json.Marshal(*context)
+	if err != nil {
+		return err
+	}
+	fp, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE, 0644)
+	if err != nil {
+		return err
+	}
+	defer fp.Close()
+
+	if _, err = fp.WriteString(string(bytes)); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (instance *TaskMemoryInfoInstance) Process(param, paramOverride, outputPath string, result chan TaskResult) {
@@ -68,22 +88,21 @@ func (instance *TaskMemoryInfoInstance) Process(param, paramOverride, outputPath
 		}
 	}
 
-	memInfo, err := utils.GetMemInfo()
+	memoryInfoContext.MemInfo, err = utils.GetMemInfo()
 	if err != nil {
 		logrus.Errorf("Failed to get meminfo, err [%s]", err)
 		return
 	}
 
-	err = memInfo.ToFile(outputPath)
-	if err != nil {
-		logrus.Errorf("Failed to write meminfo to file [%s], err [%s]", outputPath, err)
-		return
-	}
-	taskResult.OutputFiles = append(taskResult.OutputFiles, filepath.Base(outputPath))
-
-	if instance.isBeyondExpectation(memInfo, &memoryInfoContext) {
+	memoryInfoContext.Triggered = instance.isBeyondExpectation(&memoryInfoContext)
+	if memoryInfoContext.Triggered {
 		err = nil
 	} else {
 		err = fmt.Errorf("MemInfo value does not exceed thresholds")
 	}
+
+	if err := instance.writeToFile(&memoryInfoContext, outputPath); err != nil {
+		logrus.Errorf("Failed to write to file [%s], err [%s]", outputPath, err)
+	}
+	taskResult.OutputFiles = append(taskResult.OutputFiles, filepath.Base(outputPath))
 }
