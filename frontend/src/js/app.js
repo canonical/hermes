@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { createRoot } from 'react-dom/client';
-import styled from 'styled-components';
-import axios from 'axios';
-import schema from '../../schema_pb';
+import React, {useState, useEffect} from 'react'
+import {createRoot} from 'react-dom/client'
+import styled from 'styled-components'
+import axios from 'axios'
+import schema from '../../schema_pb'
+import {MemoryView} from "./memory_view"
 
 const Tab = styled.button`
   font-size: 20px;
@@ -12,7 +13,7 @@ const Tab = styled.button`
   background: white;
   border: 0;
   outline: 0;
-  ${({ active }) =>
+  ${({active}) =>
     active &&
     `
     border-bottom: 2px solid black;
@@ -23,24 +24,35 @@ const ButtonGroup = styled.div`
   display: flex;
 `;
 var tasks = []
-const TabContent = (props) => {
-  return <p> SELECT {props.task} </p>;
+
+const TabContent = ({task}) => {
+  switch (task) {
+  case 'Memory':
+    return <MemoryView />
+  }
+  return null
 }
 
+
 const TabGroup = () => {
-  const [active, setActive] = useState('');
+  const [active, setActive] = useState('')
+  const [isLoading, setLoading] = useState(true);
+  const fetchTasks = async () => {
+    let resp = await axios.get("/api/tasks", {responseType: 'arraybuffer'})
+    tasks = schema.Tasks.deserializeBinary(resp.data).getTasksList()
+    setActive(tasks[0])
+    setLoading(false)
+  }
 
   useEffect(() => {
-    const fetchTasks = async () => {
-      let resp = await axios.get("/api/tasks", {responseType: 'arraybuffer'});
-      tasks = schema.Tasks.deserializeBinary(resp.data).getTasksList()
-      setActive(tasks[0])
-    }
-
     fetchTasks()
   }, [])
+
+  if (isLoading) {
+    return <div>Loading...</div>
+  }
   return (
-    <>
+    <div>
       <ButtonGroup>
         {tasks.map(task => (
           <Tab
@@ -55,10 +67,10 @@ const TabGroup = () => {
       <TabContent
         task={active}
       />
-    </>
-  );
+    </div>
+  )
 }
 
-const container = document.getElementById('root');
-const root = createRoot(container);
-root.render(<TabGroup />);
+const container = document.getElementById('root')
+const root = createRoot(container)
+root.render(<TabGroup />)

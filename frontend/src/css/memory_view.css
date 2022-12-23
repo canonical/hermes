@@ -1,0 +1,39 @@
+.memory-view-chart {
+  width: 80%;
+
+  .axis-left {
+    line {
+      stroke-width: 0.5;
+      stroke: rgba(255, 255, 255, 0.2);
+    }
+    path {
+      display: none;
+    }
+  }  
+  .axis-bottom {
+    line, path{
+      display: none;
+    }
+  }
+  text {
+    fill: white;
+  }
+}
+.area {
+  fill: steelblue;
+  stroke: none;
+  opacity: 0.1;
+}
+.data-line {
+  stroke: steelblue;
+  stroke-width: 3;
+  fill: none;
+}
+.threshold-line {
+  stroke: red;
+  stroke-width: 3;
+  fill: none;
+}
+.rect-overlay {
+  fill: rgba(255, 255, 255, 0.1);
+}

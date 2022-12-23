@@ -1,5 +1,6 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 module.exports = {
 	mode: 'development',
@@ -19,7 +20,11 @@ module.exports = {
 						presets: ['@babel/preset-react', '@babel/preset-env'],
 					},
 				},
-			}
+			},
+			{
+				test: /\.css$/,
+				use: [MiniCssExtractPlugin.loader, 'css-loader'],
+			},
 		],
 	},
 	plugins: [
@@ -28,6 +33,9 @@ module.exports = {
 			filename: 'index.html',
 			inject: true,
 			minify: true,
+		}),
+		new MiniCssExtractPlugin({
+			filename: './css/memory_view.css',
 		}),
 	],
 	devServer: {

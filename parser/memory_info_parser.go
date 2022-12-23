@@ -59,6 +59,11 @@ func (parser *MemoryInfoParser) getCSVData(timestamp string, collection *MemoryC
 }
 
 func (parser *MemoryInfoParser) writeCSVData(csvData []string, path string) error {
+	var needHeader = false
+
+	if _, err := os.Stat(path); err != nil {
+		needHeader = true
+	}
 	fp, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
 		return err
@@ -70,6 +75,10 @@ func (parser *MemoryInfoParser) writeCSVData(csvData []string, path string) erro
 		fp.Close()
 	}()
 
+	if needHeader {
+		header := []string{"timestamp", "threshold", "val"}
+		writer.Write(header)
+	}
 	writer.Write(csvData)
 	return nil
 }

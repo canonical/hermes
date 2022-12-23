@@ -21,6 +21,7 @@ func main() {
 	contentParser = NewContentParser(viewDir)
 	router.LoadHTMLGlob(homeDir + string("/frontend/*.html"))
 	router.Static("/assets", homeDir+string("/frontend/assets"))
+	router.Static("/css", homeDir+string("/frontend/css"))
 	router.Static("/view", viewDir)
 
 	page := router.Group("/")
