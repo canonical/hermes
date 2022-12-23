@@ -3,6 +3,7 @@ package ebpf
 import (
 	"encoding/json"
 	"fmt"
+	"hermes/backend/utils"
 	"io/ioutil"
 	"os"
 )
@@ -17,14 +18,13 @@ func GetMemoryEbpfParser() (*MemoryEbpfParser, error) {
 	}, nil
 }
 
-func (parser *MemoryEbpfParser) getStackCollapsedData(pid uint32, comm string, allocRec *AllocRecord) string {
-	data := fmt.Sprintf("%s;", comm)
-	for i := len(allocRec.CallchainInsts) - 1; i >= 0; i-- {
-		data += fmt.Sprintf("%s;", allocRec.CallchainInsts[i])
+func (parser *MemoryEbpfParser) getStack(pid uint32, comm string, allocRec *AllocRecord) []string {
+	stack := []string{}
+	for _, inst := range allocRec.CallchainInsts {
+		stack = append(stack, inst)
 	}
-	data = data[:len(data)-1]
-	data += fmt.Sprintf(" %d", pid)
-	return data
+	stack = append(stack, fmt.Sprintf("%s (%d)", comm, pid))
+	return stack
 }
 
 func (parser *MemoryEbpfParser) writeStackCollapsedData(outputPath string) error {
@@ -34,25 +34,15 @@ func (parser *MemoryEbpfParser) writeStackCollapsedData(outputPath string) error
 	}
 	defer fp.Close()
 
-	idx := 0
-	for tgidPid, rec := range parser.Recs {
-		idx++
-		var data string
-		for _idx, allocRec := range rec.AllocRecs {
-			data += parser.getStackCollapsedData(uint32(tgidPid), rec.Comm, &allocRec)
-			if _idx != len(rec.AllocRecs)-1 {
-				data += "\n"
-			}
-		}
-		if idx == len(parser.Recs) {
-			data += "\n"
-		}
-		if _, err = fp.WriteString(data); err != nil {
-			return err
-		}
+	flameGraphData := utils.GetFlameGraphData()
 
+	for tgidPid, rec := range parser.Recs {
+		for _, allocRec := range rec.AllocRecs {
+			stack := parser.getStack(uint32(tgidPid), rec.Comm, &allocRec)
+			flameGraphData.Add(&stack, len(stack)-1, 1)
+		}
 	}
-	return nil
+	return flameGraphData.WriteToFile(outputPath)
 }
 
 func (parser *MemoryEbpfParser) Parse(logDir string, logs []string, outputDir string) error {
@@ -67,7 +57,7 @@ func (parser *MemoryEbpfParser) Parse(logDir string, logs []string, outputDir st
 			return err
 		}
 
-		outputPath := outputDir + string("/") + log + string(".stack.collapsed")
+		outputPath := outputDir + string("/") + log + string(".stack.json")
 		if err := parser.writeStackCollapsedData(outputPath); err != nil {
 			return err
 		}
