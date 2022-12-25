@@ -1,5 +1,7 @@
 import React, {useState, useEffect} from 'react'
-import "../css/memory_view.css"
+import * as d3 from 'd3'
+import FlameGraph from './flamegraph'
+import "../css/memory_view.scss"
 
 const Axis = ({orient, translate, scale, cssClass, tickFormat}) => {
 	let axisElement
@@ -69,9 +71,15 @@ const Area = ({scales, margins, dimensions, data}) => {
 	)
 }
 
-const Tooltip = ({scales, margins, dimensions, data}) => {
+const Tooltip = ({scales, margins, dimensions, data, flameGraphHandler, hasFlameGraphData}) => {
 	const {xScale, yScale} = scales
 	const getDataIdx = d3.bisector(d => d.timestamp).left
+	const getData = offsetX => {
+		const mouseVal = xScale.invert(offsetX);
+		const idx = getDataIdx(data, mouseVal)
+
+		return (mouseVal - data[idx - 1].timestamp) < (data[idx].timestamp - mouseVal) ? data[idx - 1] : data[idx]
+	}
 	const tooltip = (
 		<g className="tooltip" transform={`translate(${xScale(data[0].timestamp)}, ${yScale(data[0].val)})`}>
 			<line y1="0" y2={dimensions.height - margins.bottom} stroke="steelblue"
@@ -89,13 +97,22 @@ const Tooltip = ({scales, margins, dimensions, data}) => {
 			height={dimensions.height - margins.top - margins.bottom}
 			opacity="0"
 			onMouseMove={event => {
-				const mouseVal = xScale.invert(event.nativeEvent.offsetX);
-				const idx = getDataIdx(data, mouseVal)
-				const d = (mouseVal - data[idx - 1].timestamp) < (data[idx].timestamp - mouseVal) ? data[idx - 1] : data[idx]
+				if (hasFlameGraphData()) {
+					return
+				}
+				const d = getData(event.nativeEvent.offsetX)
 				d3.select(".tooltip").attr("transform", "translate(" + xScale(d.timestamp) + ", " + yScale(d.val) + ")");
 				d3.select(".tooltip line").attr("y2", dimensions.height - yScale(d.val) - margins.bottom);
 				d3.select(".tooltip text").text(d.val)
-			}} />
+			}}
+			onMouseDown={event => {
+				if (hasFlameGraphData()) {
+					return
+				}
+				const d = getData(event.nativeEvent.offsetX)
+				flameGraphHandler(d)
+			}}
+			/>
 	)
 
 	return (
@@ -105,7 +122,7 @@ const Tooltip = ({scales, margins, dimensions, data}) => {
 	);
 }
 
-const MemoryViewChart = ({margins, dimensions, data}) => {
+const MemoryViewChart = ({margins, dimensions, data, flameGraphHandler, hasFlameGraphData}) => {
 	const xScale = d3.scaleLinear()
 		.domain(d3.extent(data, d => d.timestamp))
 		.range([margins.left, dimensions.width - margins.right])
@@ -128,13 +145,18 @@ const MemoryViewChart = ({margins, dimensions, data}) => {
 			{rectOverlay}{text}
 			<XYAxisChart scales={{xScale, yScale}} margins={margins} dimensions={dimensions} data={data}/>
 			<Area scales={{xScale, yScale}} margins={margins} dimensions={dimensions} data={data}/>
-			<Tooltip scales={{xScale, yScale}} margins={margins} dimensions={dimensions} data={data} />
+			<Tooltip scales={{xScale, yScale}} margins={margins} dimensions={dimensions} data={data}
+				flameGraphHandler={flameGraphHandler} hasFlameGraphData={hasFlameGraphData} />
 		</svg>
 	)
 }
 
-export const MemoryView = () => {
+const MemoryView = () => {
 	const [data, setData] = useState()
+	const [flameGraphData, setFlameGraphData] = useState()
+	const hasFlameGraphData = () => {
+		return !!flameGraphData
+	}
 
 	useEffect(() => {
 		d3.csv('/view/Memory/overview').then(data => {
@@ -153,8 +175,12 @@ export const MemoryView = () => {
 		)
 	}
 	return (
-			<div className="memory-view-chart">
-				<MemoryViewChart margins={margins} dimensions={dimensions} data={data} />
+			<div>
+				<MemoryViewChart className="memory-view-chart" margins={margins} dimensions={dimensions} data={data}
+					flameGraphHandler={setFlameGraphData} hasFlameGraphData={hasFlameGraphData} />
+				{flameGraphData && <FlameGraph data={flameGraphData} closeHandler={() => {setFlameGraphData(null)}} />}
 			</div>
 	)
 }
+
+export default MemoryView

@@ -3,7 +3,7 @@ import {createRoot} from 'react-dom/client'
 import styled from 'styled-components'
 import axios from 'axios'
 import schema from '../../schema_pb'
-import {MemoryView} from "./memory_view"
+import MemoryView from './memory_view'
 
 const Tab = styled.button`
   font-size: 20px;

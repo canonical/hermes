@@ -22,8 +22,8 @@ module.exports = {
 				},
 			},
 			{
-				test: /\.css$/,
-				use: [MiniCssExtractPlugin.loader, 'css-loader'],
+				test: /\.(scss|sass|css)$/,
+				use: [MiniCssExtractPlugin.loader, 'css-loader', 'sass-loader'],
 			},
 		],
 	},
@@ -35,7 +35,7 @@ module.exports = {
 			minify: true,
 		}),
 		new MiniCssExtractPlugin({
-			filename: './css/memory_view.css',
+			filename: './css/style.css',
 		}),
 	],
 	devServer: {
