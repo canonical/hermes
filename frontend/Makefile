@@ -18,6 +18,7 @@ build:
 clean:
 	$(RM) -rf ./build
 	$(RM) -f ./*pb.js
+	$(RM) -rf ./node_modules
 
 install:
 	$(MKDIR) -p $(DST_FRONTEND_DIR)
