@@ -58,6 +58,11 @@ func (instance *TaskEbpfInstance) Process(param, paramOverride, outputPath strin
 		}
 	}
 
+	// Allow the current process to lock memory for eBPF resources.
+	if err := rlimit.RemoveMemlock(); err != nil {
+		return
+	}
+
 	loader, err := ebpf.GetLoader(ebpfContext.EbpfType)
 	if err != nil {
 		return
@@ -66,10 +71,6 @@ func (instance *TaskEbpfInstance) Process(param, paramOverride, outputPath strin
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(ebpfContext.Timeout)*time.Second)
 	defer cancel()
 
-	// Allow the current process to lock memory for eBPF resources.
-	if err := rlimit.RemoveMemlock(); err != nil {
-		return
-	}
 	if err := loader.Load(ctx); err != nil {
 		return
 	}
