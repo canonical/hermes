@@ -2,8 +2,6 @@ package collector
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
 	"path/filepath"
 	"runtime"
 	"strconv"
@@ -16,8 +14,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const CPUProfileTask = "cpu_profile"
+
 type ProfileContext struct {
-	Timeout uint32 `json:"timeout"`
+	Timeout uint32 `json:"timeout" yaml:"timeout"`
 }
 
 type TaskProfileInstance struct{}
@@ -36,31 +36,18 @@ func (instance *TaskProfileInstance) profile(ctx context.Context, cpu int, attr 
 	perfEvent.Profile(ctx, outputPath)
 }
 
-func (instance *TaskProfileInstance) Process(param, paramOverride, outputPath string, result chan TaskResult) {
-	profileContext := ProfileContext{}
+func (instance *TaskProfileInstance) Process(instContext interface{}, outputPath string, result chan TaskResult) {
+	profileContext := instContext.(ProfileContext)
 	taskResult := TaskResult{
 		Err:         nil,
 		ParserType:  parser.None,
 		OutputFiles: []string{},
 	}
-	err := errors.New("")
+	var err error
 	defer func() {
 		taskResult.Err = err
 		result <- taskResult
 	}()
-
-	err = json.Unmarshal([]byte(param), &profileContext)
-	if err != nil {
-		logrus.Errorf("Failed to unmarshal json, param [%s]", param)
-		return
-	}
-	if paramOverride != "" {
-		err = json.Unmarshal([]byte(paramOverride), &profileContext)
-		if err != nil {
-			logrus.Errorf("Failed to unmarshal json, paramOverride [%s]", paramOverride)
-			return
-		}
-	}
 
 	attr := perf.Attr{
 		SampleFormat: perf.SampleFormat{

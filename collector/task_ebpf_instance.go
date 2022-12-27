@@ -2,20 +2,19 @@ package collector
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
 	"time"
 
 	"hermes/backend/ebpf"
 	"hermes/parser"
 
 	"github.com/cilium/ebpf/rlimit"
-	"github.com/sirupsen/logrus"
 )
 
+const MemoryEbpfTask = "memory_ebpf"
+
 type EbpfContext struct {
-	Timeout  uint32        `json:"timeout"`
-	EbpfType ebpf.EbpfType `json:"ebpf_type"`
+	Timeout  uint32        `json:"timeout" yaml:"timeout"`
+	EbpfType ebpf.EbpfType `json:"ebpf_type" yaml:"ebpf_type"`
 }
 
 type TaskEbpfInstance struct{}
@@ -32,31 +31,18 @@ func (instance *TaskEbpfInstance) getParserType(ebpfType ebpf.EbpfType) parser.P
 	return parser.None
 }
 
-func (instance *TaskEbpfInstance) Process(param, paramOverride, outputPath string, result chan TaskResult) {
-	ebpfContext := EbpfContext{}
+func (instance *TaskEbpfInstance) Process(instContext interface{}, outputPath string, result chan TaskResult) {
+	ebpfContext := instContext.(EbpfContext)
 	taskResult := TaskResult{
 		Err:         nil,
 		ParserType:  parser.None,
 		OutputFiles: []string{},
 	}
-	err := errors.New("")
+	var err error
 	defer func() {
 		taskResult.Err = err
 		result <- taskResult
 	}()
-
-	err = json.Unmarshal([]byte(param), &ebpfContext)
-	if err != nil {
-		logrus.Errorf("Failed to unmarshal json, param [%s]", param)
-		return
-	}
-	if paramOverride != "" {
-		err = json.Unmarshal([]byte(paramOverride), &ebpfContext)
-		if err != nil {
-			logrus.Errorf("Failed to unmarshal json, paramOverride [%s]", paramOverride)
-			return
-		}
-	}
 
 	// Allow the current process to lock memory for eBPF resources.
 	if err := rlimit.RemoveMemlock(); err != nil {

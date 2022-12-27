@@ -2,7 +2,6 @@ package collector
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"hermes/backend/utils"
 	"hermes/parser"
@@ -12,10 +11,11 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const MemoryInfoTask = "memory_info"
 const MemTotal = "MemTotal"
 
 type MemoryInfoContext struct {
-	Thresholds map[string]uint64 `json:"thresholds"`
+	Thresholds map[string]uint64 `json:"thresholds" yaml:"thresholds"`
 	MemInfo    *utils.MemInfo    `json:"memInfo"`
 	Triggered  bool              `json:"triggered"`
 }
@@ -62,31 +62,18 @@ func (instance *TaskMemoryInfoInstance) writeToFile(context *MemoryInfoContext, 
 	return nil
 }
 
-func (instance *TaskMemoryInfoInstance) Process(param, paramOverride, outputPath string, result chan TaskResult) {
-	memoryInfoContext := MemoryInfoContext{}
+func (instance *TaskMemoryInfoInstance) Process(instContext interface{}, outputPath string, result chan TaskResult) {
+	memoryInfoContext := instContext.(MemoryInfoContext)
 	taskResult := TaskResult{
 		Err:         nil,
 		ParserType:  parser.MemoryInfo,
 		OutputFiles: []string{},
 	}
-	err := errors.New("")
+	var err error
 	defer func() {
 		taskResult.Err = err
 		result <- taskResult
 	}()
-
-	err = json.Unmarshal([]byte(param), &memoryInfoContext)
-	if err != nil {
-		logrus.Errorf("Failed to unmarshal json, param [%s]", param)
-		return
-	}
-	if paramOverride != "" {
-		err = json.Unmarshal([]byte(paramOverride), &memoryInfoContext)
-		if err != nil {
-			logrus.Errorf("Failed to unmarshal json, paramOverride [%s]", paramOverride)
-			return
-		}
-	}
 
 	memoryInfoContext.MemInfo, err = utils.GetMemInfo()
 	if err != nil {

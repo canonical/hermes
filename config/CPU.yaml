@@ -3,8 +3,12 @@ interval: 20
 routines:
   profile:
     condition:
-      task: psi
-      param_override: '{"type":0,"some":[-1,-1,0]}'
+      psi:
+        type: 0
+        some:
+            - -1
+            - -1
+            - 0
     content:
-      task: cpu_profile
+      cpu_profile: null
 start: profile

@@ -2,7 +2,6 @@ package collector
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 
@@ -12,10 +11,12 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const PSITask = "psi"
+
 type PSIContext struct {
-	Type utils.PSIType `json:"type"`
-	Some []float64     `json:"some"`
-	Full []float64     `json:"full"`
+	Type utils.PSIType `json:"type" yaml:"type"`
+	Some []float64     `json:"some" yaml:"some"`
+	Full []float64     `json:"full" yaml:"full"`
 }
 
 type TaskPSIInstance struct{}
@@ -58,31 +59,18 @@ func (instance *TaskPSIInstance) ToFile(psiResult *utils.PSIResult, outputPath s
 	return nil
 }
 
-func (instance *TaskPSIInstance) Process(param, paramOverride, outputPath string, result chan TaskResult) {
-	psiContext := PSIContext{}
+func (instance *TaskPSIInstance) Process(instContext interface{}, outputPath string, result chan TaskResult) {
+	psiContext := instContext.(PSIContext)
 	taskResult := TaskResult{
 		Err:         nil,
 		ParserType:  parser.None,
 		OutputFiles: []string{},
 	}
-	err := errors.New("")
+	var err error
 	defer func() {
 		taskResult.Err = err
 		result <- taskResult
 	}()
-
-	err = json.Unmarshal([]byte(param), &psiContext)
-	if err != nil {
-		logrus.Errorf("Failed to unmarshal json, param [%s]", param)
-		return
-	}
-	if paramOverride != "" {
-		err = json.Unmarshal([]byte(paramOverride), &psiContext)
-		if err != nil {
-			logrus.Errorf("Failed to unmarshal json, paramOverride [%s]", paramOverride)
-			return
-		}
-	}
 
 	var psi utils.PSI
 	psiResult, err := psi.GetSystemLevel(psiContext.Type)

@@ -3,7 +3,7 @@ interval: 15
 routines:
   memory_profile:
     condition:
-      task: memory_info
+      memory_info: null
     content:
-      task: memory_ebpf
+      memory_ebpf: null
 start: memory_profile

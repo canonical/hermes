@@ -24,16 +24,11 @@ func (jobClass JobClass) String() string {
 	return [...]string{"Disposable", "Periodic"}[jobClass]
 }
 
-type RoutineTask struct {
-	Task          string `yaml:"task"`
-	ParamOverride string `yaml:"param_override"`
-}
-
 type Routine struct {
-	Cond     RoutineTask `yaml:"condition"`
-	Task     RoutineTask `yaml:"content"`
-	CondSucc string      `yaml:"condSucc"`
-	CondFail string      `yaml:"condFail"`
+	Cond     map[string]interface{} `yaml:"condition"`
+	Task     map[string]interface{} `yaml:"content"`
+	CondSucc string                 `yaml:"condSucc"`
+	CondFail string                 `yaml:"condFail"`
 }
 
 type Job struct {
@@ -69,6 +64,11 @@ func NewJob(configPath string) (*Job, error) {
 	err = yaml.Unmarshal(data, &job)
 	if err != nil {
 		return nil, err
+	}
+	for _, routine := range job.Routines {
+		if len(routine.Cond) > 1 || len(routine.Task) != 1 {
+			return nil, fmt.Errorf("Unexpected config format")
+		}
 	}
 
 	return &job, nil

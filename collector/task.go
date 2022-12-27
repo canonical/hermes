@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"reflect"
 
 	"hermes/parser"
 
@@ -29,9 +30,8 @@ func (taskType TaskType) String() string {
 const taskConfigDir = "/root/config/tasks/"
 
 type TaskContext struct {
-	Type          TaskType `yaml:"type"`
-	Param         string   `yaml:"param"`
-	ParamOverride string
+	Type    TaskType
+	Context interface{}
 }
 
 type TaskResult struct {
@@ -41,7 +41,7 @@ type TaskResult struct {
 }
 
 type TaskInstance interface {
-	Process(param string, param_oevrride string, outputPath string, result chan TaskResult)
+	Process(context interface{}, outputPath string, result chan TaskResult)
 }
 
 type Task struct {
@@ -49,37 +49,95 @@ type Task struct {
 	Task TaskContext
 }
 
-func loadTask(taskName string, taskContext *TaskContext) error {
+func unmarshalTask(taskName string, param, paramOverride *[]byte, taskContext *TaskContext) error {
+	switch taskName {
+	case MemoryInfoTask:
+		var context MemoryInfoContext
+		if err := yaml.Unmarshal(*param, &context); err != nil {
+			return err
+		}
+		if paramOverride != nil {
+			if err := yaml.Unmarshal(*paramOverride, &context); err != nil {
+				return err
+			}
+		}
+		taskContext.Type = MemoryInfo
+		taskContext.Context = context
+	case CPUProfileTask:
+		var context ProfileContext
+		if err := yaml.Unmarshal(*param, &context); err != nil {
+			return err
+		}
+		if paramOverride != nil {
+			if err := yaml.Unmarshal(*paramOverride, &context); err != nil {
+				return err
+			}
+		}
+		taskContext.Type = Profile
+		taskContext.Context = context
+	case PSITask:
+		var context PSIContext
+		if err := yaml.Unmarshal(*param, &context); err != nil {
+			return err
+		}
+		if paramOverride != nil {
+			if err := yaml.Unmarshal(*paramOverride, &context); err != nil {
+				return err
+			}
+		}
+		taskContext.Type = PSI
+		taskContext.Context = context
+	case MemoryEbpfTask:
+		var context EbpfContext
+		if err := yaml.Unmarshal(*param, &context); err != nil {
+			return err
+		}
+		if paramOverride != nil {
+			if err := yaml.Unmarshal(*paramOverride, &context); err != nil {
+				return err
+			}
+		}
+		taskContext.Type = Ebpf
+		taskContext.Context = context
+	}
+
+	return nil
+}
+
+func loadTask(taskName string, paramOverride interface{}, taskContext *TaskContext) error {
 	taskConfigPath := string(taskConfigDir) + taskName + string(".yaml")
 	if _, err := os.Stat(taskConfigPath); err != nil {
 		return err
 	}
 
-	data, err := ioutil.ReadFile(taskConfigPath)
+	param, err := ioutil.ReadFile(taskConfigPath)
 	if err != nil {
 		return err
 	}
 
-	err = yaml.Unmarshal(data, taskContext)
-	if err != nil {
-		return err
+	if paramOverride != nil {
+		_paramOverride, err := yaml.Marshal(paramOverride)
+		if err != nil {
+			return err
+		}
+		return unmarshalTask(taskName, &param, &_paramOverride, taskContext)
 	}
-	return nil
+	return unmarshalTask(taskName, &param, nil, taskContext)
 }
 
 func NewTask(routine Routine) (*Task, error) {
 	var task Task
-	if routine.Cond.Task != "" {
-		if err := loadTask(routine.Cond.Task, &task.Cond); err != nil {
+	if len(routine.Cond) == 1 {
+		taskName := reflect.ValueOf(routine.Cond).MapKeys()[0].Interface().(string)
+		if err := loadTask(taskName, routine.Cond[taskName], &task.Cond); err != nil {
 			return nil, err
 		}
-		task.Cond.ParamOverride = routine.Cond.ParamOverride
 	}
 
-	if err := loadTask(routine.Task.Task, &task.Task); err != nil {
+	taskName := reflect.ValueOf(routine.Task).MapKeys()[0].Interface().(string)
+	if err := loadTask(taskName, routine.Task[taskName], &task.Task); err != nil {
 		return nil, err
 	}
-	task.Task.ParamOverride = routine.Task.ParamOverride
 
 	return &task, nil
 }
@@ -114,7 +172,7 @@ func (task *Task) execute(context *TaskContext, outputPath string, result chan T
 		return
 	}
 
-	instance.Process(context.Param, context.ParamOverride, outputPath, result)
+	instance.Process(context.Context, outputPath, result)
 }
 
 func (task *Task) Condition(outputPath string) TaskResult {

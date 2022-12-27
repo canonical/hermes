@@ -1,13 +1,9 @@
 package collector
 
 import (
-	"encoding/json"
-	"errors"
 	"os"
 
 	"hermes/parser"
-
-	"github.com/sirupsen/logrus"
 )
 
 type BinaryContext struct {
@@ -20,36 +16,23 @@ func NewTaskBinaryInstance() (TaskInstance, error) {
 	return &TaskBinaryInstance{}, nil
 }
 
-func (instance *TaskBinaryInstance) Process(param, paramOverride, outputPath string, result chan TaskResult) {
-	context := BinaryContext{}
+func (instance *TaskBinaryInstance) Process(instContext interface{}, outputPath string, result chan TaskResult) {
+	binaryContext := instContext.(BinaryContext)
 	taskResult := TaskResult{
 		Err:         nil,
 		ParserType:  parser.None,
 		OutputFiles: []string{},
 	}
-	err := errors.New("")
+	var err error
 	defer func() {
 		taskResult.Err = err
 		result <- taskResult
 	}()
 
-	err = json.Unmarshal([]byte(param), &context)
-	if err != nil {
-		logrus.Errorf("Failed to unmarshal json, param [%s]", param)
-		return
-	}
-	if paramOverride != "" {
-		err = json.Unmarshal([]byte(paramOverride), &context)
-		if err != nil {
-			logrus.Errorf("Failed to unmarshal json, paramOverride [%s]", paramOverride)
-			return
-		}
-	}
-
 	env := map[string]string{
 		"OUTPUT_FILE": outputPath,
 	}
-	cmd := PrepareCmd(context.Cmds, env)
+	cmd := PrepareCmd(binaryContext.Cmds, env)
 	outfile, err := os.Create(outputPath)
 	if err != nil {
 		return

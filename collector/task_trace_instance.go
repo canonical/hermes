@@ -1,14 +1,10 @@
 package collector
 
 import (
-	"encoding/json"
-	"errors"
 	"time"
 
 	"hermes/backend/ftrace"
 	"hermes/parser"
-
-	"github.com/sirupsen/logrus"
 )
 
 type TraceContext struct {
@@ -33,33 +29,21 @@ func NewTaskTraceInstance() (TaskInstance, error) {
 		ftrace: ftrace}, nil
 }
 
-func (instance *TaskTraceInstance) Process(param, paramOverride, outputPath string, result chan TaskResult) {
-	context := TraceContext{}
+func (instance *TaskTraceInstance) Process(instContext interface{}, outputPath string, result chan TaskResult) {
+	traceContext := instContext.(TraceContext)
 	taskResult := TaskResult{
 		Err:         nil,
 		ParserType:  parser.None,
 		OutputFiles: []string{},
 	}
-	err := errors.New("")
+	var err error
 	defer func() {
 		taskResult.Err = err
 		result <- taskResult
 	}()
 
-	err = json.Unmarshal([]byte(param), &context)
-	if err != nil {
-		logrus.Errorf("Failed to unmarshal json, param [%s]", param)
-		return
-	}
-	if paramOverride != "" {
-		err = json.Unmarshal([]byte(paramOverride), &context)
-		if err != nil {
-			logrus.Errorf("Failed to unmarshal json, paramOverride [%s]", paramOverride)
-			return
-		}
-	}
-
-	err = instance.ftrace.Enable(context.CurrentTracer, context.TraceOptions, context.SetEvent, context.SetFtraceFilter)
+	err = instance.ftrace.Enable(traceContext.CurrentTracer,
+		traceContext.TraceOptions, traceContext.SetEvent, traceContext.SetFtraceFilter)
 	if err != nil {
 		return
 	}
@@ -70,7 +54,7 @@ func (instance *TaskTraceInstance) Process(param, paramOverride, outputPath stri
 
 	go instance.ftrace.Trace(outputPath, timeout, ack)
 
-	timer := time.NewTimer(time.Duration(context.Timeout) * time.Second)
+	timer := time.NewTimer(time.Duration(traceContext.Timeout) * time.Second)
 	defer timer.Stop()
 	select {
 	case err = <-ack:

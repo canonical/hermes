@@ -1,2 +1,2 @@
-type: 6
-param: '{"thresholds":{"MemFree":10}}'
+thresholds:
+  MemFree: 10

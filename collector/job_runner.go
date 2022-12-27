@@ -3,13 +3,12 @@ package collector
 import (
 	"context"
 	"fmt"
+	"hermes/parser"
 	"os"
 	"path/filepath"
 	"strconv"
 	"sync"
 	"time"
-
-	"hermes/parser"
 
 	"github.com/sirupsen/logrus"
 )
