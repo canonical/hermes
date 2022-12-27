@@ -11,12 +11,12 @@
 
 	.reset_zoom {
 		background-color: white;
-		border-radius: 15px;
+		border-radius: 10px;
 		border: 2px solid blue;
 		float: right;
-		font-size: 16px;
+		margin-right: 8px;
+		font-size: 18px;
 	}
-
 	.close-icon {
 		content: 'x';
 		cursor: pointer;
@@ -31,5 +31,10 @@
 		text-align: center;
 		border: 1px solid black;
 		font-size: 20px;
+	}
+	.title {
+		margin-top: 4px;
+		font-size: 24px;
+		text-align: center;
 	}
 }

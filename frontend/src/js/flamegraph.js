@@ -17,7 +17,6 @@ const FlameGraph = ({data, closeHandler}) => {
 		.minFrameSize(5)
 		.transitionEase(d3.easeCubic)
 		.sort(true)
-		.title(title)
 		.selfValue(false)
 
 	useEffect(() => {
@@ -31,9 +30,12 @@ const FlameGraph = ({data, closeHandler}) => {
 
 	return (
 		<div className='box'>
+			<div className='title'>
+				{title}
+			</div>
 			<span className='close-icon' onClick={closeHandler}>x</span>
-			{chart}
 			<button className='reset_zoom' onClick={() => flameGraph.resetZoom()}>Reset zoom</button>
+			{chart}
 		</div>
 	)
 }
