@@ -14,10 +14,9 @@ import (
 const MemTotal = "MemTotal"
 const MemFree = "MemFree"
 
-type MemoryCollection struct {
+type MemoryInfoRecord struct {
 	Thresholds map[string]uint64 `json:"thresholds"`
 	MemInfo    *utils.MemInfo    `json:"memInfo"`
-	Triggered  bool              `json:"triggered"`
 }
 
 type MemoryInfoParser struct{}
@@ -26,31 +25,31 @@ func GetMemoryInfoParser() (ParserInstance, error) {
 	return &MemoryInfoParser{}, nil
 }
 
-func (parser *MemoryInfoParser) getMemoryCollection(path string) (*MemoryCollection, error) {
-	data, err := ioutil.ReadFile(path)
+func (parser *MemoryInfoParser) getMemoryInfoRecord(path string) (*MemoryInfoRecord, error) {
+	bytes, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
 
-	var collection MemoryCollection
-	if err := json.Unmarshal(data, &collection); err != nil {
+	var rec MemoryInfoRecord
+	if err := json.Unmarshal(bytes, &rec); err != nil {
 		return nil, err
 	}
-	return &collection, nil
+	return &rec, nil
 }
 
-func (parser *MemoryInfoParser) getCSVData(timestamp string, collection *MemoryCollection) ([]string, error) {
-	memTotal, isExist := (*collection.MemInfo)[MemTotal]
+func (parser *MemoryInfoParser) getCSVData(timestamp string, rec *MemoryInfoRecord) ([]string, error) {
+	memTotal, isExist := (*rec.MemInfo)[MemTotal]
 	if !isExist {
 		return []string{}, fmt.Errorf("Entry [MemTotal] does not exist")
 	}
 
-	memFree, isExist := (*collection.MemInfo)[MemFree]
+	memFree, isExist := (*rec.MemInfo)[MemFree]
 	if !isExist {
 		return []string{}, fmt.Errorf("Entry [MemFree] does not exist")
 	}
 
-	percent, isExist := collection.Thresholds[MemFree]
+	percent, isExist := rec.Thresholds[MemFree]
 	if !isExist {
 		return []string{}, fmt.Errorf("Threshold [MemFree] does not exist")
 	}
@@ -88,12 +87,12 @@ func (parser *MemoryInfoParser) Parse(logDir string, logs []string, outputDir st
 		return fmt.Errorf("Some logs may not be handled")
 	}
 
-	collection, err := parser.getMemoryCollection(logDir + "/" + logs[0])
+	rec, err := parser.getMemoryInfoRecord(logDir + "/" + logs[0])
 	if err != nil {
 		return err
 	}
 
-	csvData, err := parser.getCSVData(filepath.Base(outputDir), collection)
+	csvData, err := parser.getCSVData(filepath.Base(outputDir), rec)
 	if err != nil {
 		return err
 	}

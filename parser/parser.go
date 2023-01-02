@@ -41,6 +41,8 @@ func (parser *Parser) getInstance(meta Metadata) (ParserInstance, error) {
 	switch meta.Type {
 	case None:
 		return nil, nil
+	case CpuInfo:
+		return GetCpuInfoParser()
 	case MemoryInfo:
 		return GetMemoryInfoParser()
 	case MemoryEbpf:

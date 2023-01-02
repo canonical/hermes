@@ -20,11 +20,15 @@ const (
 	Profile
 	Ebpf
 	PSI
+	CpuInfo
 	MemoryInfo
 )
 
 func (taskType TaskType) String() string {
-	return [...]string{"Binary", "Trace", "Profile", "Ebpf", "PSI", "MemoryInfo"}[taskType]
+	return [...]string{
+		"Binary", "Trace", "Profile",
+		"Ebpf", "PSI", "CpuInfo", "MemoryInfo",
+	}[taskType]
 }
 
 const taskConfigDir = "/root/config/tasks/"
@@ -51,6 +55,18 @@ type Task struct {
 
 func unmarshalTask(taskName string, param, paramOverride *[]byte, taskContext *TaskContext) error {
 	switch taskName {
+	case CpuInfoTask:
+		var context CpuInfoContext
+		if err := yaml.Unmarshal(*param, &context); err != nil {
+			return err
+		}
+		if paramOverride != nil {
+			if err := yaml.Unmarshal(*paramOverride, &context); err != nil {
+				return err
+			}
+		}
+		taskContext.Type = CpuInfo
+		taskContext.Context = context
 	case MemoryInfoTask:
 		var context MemoryInfoContext
 		if err := yaml.Unmarshal(*param, &context); err != nil {
@@ -154,6 +170,8 @@ func (task *Task) getInstance(taskType TaskType) (TaskInstance, error) {
 		return NewTaskEbpfInstance()
 	case PSI:
 		return NewTaskPSIInstance()
+	case CpuInfo:
+		return NewCpuInfoInstance()
 	case MemoryInfo:
 		return NewMemoryInfoInstance()
 	}

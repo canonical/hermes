@@ -12,12 +12,13 @@ require (
 require (
 	github.com/cilium/ebpf v0.9.3
 	github.com/gin-gonic/gin v1.8.1
-	golang.org/x/sys v0.0.0-20220928140112-f11e5e49a4ec
-	google.golang.org/protobuf v1.28.1
+	github.com/shirou/gopsutil v3.21.11+incompatible
+	golang.org/x/sys v0.2.0
 )
 
 require (
 	github.com/gin-contrib/sse v0.1.0 // indirect
+	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/go-playground/locales v0.14.0 // indirect
 	github.com/go-playground/universal-translator v0.18.0 // indirect
 	github.com/go-playground/validator/v10 v10.10.0 // indirect
@@ -28,8 +29,12 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180228061459-e0a39a4cb421 // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.1 // indirect
+	github.com/tklauser/go-sysconf v0.3.11 // indirect
+	github.com/tklauser/numcpus v0.6.0 // indirect
 	github.com/ugorji/go/codec v1.2.7 // indirect
+	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97 // indirect
 	golang.org/x/net v0.0.0-20210226172049-e18ecbb05110 // indirect
 	golang.org/x/text v0.3.6 // indirect
+	google.golang.org/protobuf v1.28.1 // indirect
 )
