@@ -69,9 +69,9 @@ ifneq ($(shell $(WHICH) $(GO)),)
 	$(GO) clean
 endif
 	$(RM) -rf $(BUILD_DIR)
-	$(RM) -f ./backend/ebpf/*/bpf_bpfeb.go
-	$(RM) -f ./backend/ebpf/*/bpf_bpfeb.o
-	$(RM) -f ./backend/ebpf/*/bpf_bpfel.go
-	$(RM) -f ./backend/ebpf/*/bpf_bpfel.o
+	$(RM) -f ./backend/ebpf/*/bpf_bpfeb*.go
+	$(RM) -f ./backend/ebpf/*/bpf_bpfeb*.o
+	$(RM) -f ./backend/ebpf/*/bpf_bpfel*.go
+	$(RM) -f ./backend/ebpf/*/bpf_bpfel*.o
 	$(MAKE) -C $(PROTO_DIR) clean
 	$(MAKE) -C $(FRONTEND_DIR) clean

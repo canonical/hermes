@@ -88,8 +88,9 @@ func (instance *TaskMemoryInfoInstance) Process(instContext interface{}, outputP
 		err = fmt.Errorf("MemInfo value does not exceed thresholds")
 	}
 
-	if err := instance.writeToFile(&memoryInfoContext, outputPath); err != nil {
-		logrus.Errorf("Failed to write to file [%s], err [%s]", outputPath, err)
+	memCondFile := outputPath + ".cond"
+	if err := instance.writeToFile(&memoryInfoContext, memCondFile); err != nil {
+		logrus.Errorf("Failed to write to file [%s], err [%s]", memCondFile, err)
 	}
-	taskResult.OutputFiles = append(taskResult.OutputFiles, filepath.Base(outputPath))
+	taskResult.OutputFiles = append(taskResult.OutputFiles, filepath.Base(memCondFile))
 }

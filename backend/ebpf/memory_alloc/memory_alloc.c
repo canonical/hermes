@@ -2,41 +2,51 @@
 
 #include "vmlinux.h"
 
+#include <bpf/bpf_core_read.h>
 #include <bpf/bpf_helpers.h>
+#include <bpf/bpf_tracing.h>
+
+#include <string.h>
 
 char __license[] SEC("license") = "Dual MIT/GPL";
 
 #define MAX_ENTRIES 1000000
 #define PERF_MAX_STACK_DEPTH 127
-#define PAGE_SIZE 4096
 #define TASK_COMM_LEN 16
+#define SLAB_NAME_LEN 32
 
-struct InfoValue {
+#define min(a, b) ((a < b) ? a : b)
+
+struct TaskKey {
   u64 tgid_pid;
+  u64 addr;
+};
+
+struct TaskInfo {
+  unsigned char slab[SLAB_NAME_LEN];
   unsigned char comm[TASK_COMM_LEN];
-  size_t size;
+  size_t bytes_alloc;
   u32 stack_id;
 };
 
-struct MemInfo {
+struct SlabInfo {
+  __uint(type, BPF_MAP_TYPE_HASH);
+  __type(key, struct TaskKey);
+  __type(value, struct TaskInfo);
+  __uint(max_entries, MAX_ENTRIES);
+};
+struct SlabInfo slab_info SEC(".maps");
+
+struct SlabTmpInfo {
+  char slab[SLAB_NAME_LEN];
+};
+
+struct {
   __uint(type, BPF_MAP_TYPE_HASH);
   __type(key, u64);
-  __type(value, struct InfoValue);
+  __type(value, struct SlabTmpInfo);
   __uint(max_entries, MAX_ENTRIES);
-};
-
-struct MemInfo slab_info SEC(".maps");
-struct MemInfo page_info SEC(".maps");
-
-struct MemStats {
-  __uint(type, BPF_MAP_TYPE_HASH);
-  __type(key, u32);
-  __type(value, size_t);
-  __uint(max_entries, MAX_ENTRIES);
-};
-
-struct MemStats slab_stats SEC(".maps");
-struct MemStats page_stats SEC(".maps");
+} tgid_pid_slab SEC(".maps");
 
 struct {
   __uint(type, BPF_MAP_TYPE_STACK_TRACE);
@@ -45,38 +55,33 @@ struct {
   __uint(max_entries, MAX_ENTRIES);
 } stack_trace SEC(".maps");
 
-int mem_alloc(u64 addr, struct MemInfo *mem_info, struct MemStats *mem_stats, struct InfoValue *info) {
-  u64 *val;
+int mem_alloc(u64 addr, u32 stack_id, const char *slab, size_t bytes_alloc) {
+  u64 tgid_pid = bpf_get_current_pid_tgid();
+  struct TaskKey task_key = {
+    .tgid_pid = tgid_pid,
+    .addr = addr
+  };
+  struct TaskInfo task_info;
 
-  bpf_map_update_elem(mem_info, &addr, info, BPF_NOEXIST);
-  val = bpf_map_lookup_elem(mem_stats, &info->stack_id);
-  if (!val) {
-    u64 zero = 0;
-    bpf_map_update_elem(mem_stats, &info->stack_id, &zero, BPF_NOEXIST);
-    val = bpf_map_lookup_elem(mem_stats, &info->stack_id);
-  }
+  __builtin_memset(&task_info, 0, sizeof(struct TaskInfo));
+  bpf_probe_read_kernel_str(task_info.slab, sizeof(task_info.slab), slab);
+  bpf_get_current_comm(&task_info.comm, sizeof(task_info.comm));
+  task_info.bytes_alloc = bytes_alloc;
+  task_info.stack_id = stack_id;
 
-  if (val) {
-    (*val) += info->size;
-  }
+  bpf_map_update_elem(&slab_info, &task_key, &task_info, BPF_NOEXIST);
+
   return 0;
 }
 
-int mem_free(u64 addr, struct MemInfo *mem_info, struct MemStats *mem_stats) {
-  struct InfoValue *info;
-  u64 *val;
+int mem_free(u64 tgid_pid, u64 addr) {
+  struct TaskKey task_key = {
+    .tgid_pid = tgid_pid,
+    .addr = addr
+  };
 
-  info = bpf_map_lookup_elem(mem_info, &addr);
-  if (!info) {
-    return 0;
-  }
+  bpf_map_delete_elem(&slab_info, &task_key);
 
-  val = bpf_map_lookup_elem(mem_stats, &info->stack_id);
-  if (!val) {
-    return 0;
-  }
-
-  (*val) = ((*val) > info->size) ? (*val) - info->size : 0;
   return 0;
 }
 
@@ -95,15 +100,10 @@ struct SlabKmallocInfo {
 
 SEC("tracepoint/kmem/kmalloc")
 int kmalloc(struct SlabKmallocInfo *ctx) {
-  struct InfoValue info;
+  u32 stack_id = bpf_get_stackid(ctx, &stack_trace, 0);
+  const char *anonymous = "anonymous";
 
-  __builtin_memset(&info, 0, sizeof(struct InfoValue));
-  info.tgid_pid = bpf_get_current_pid_tgid();
-  bpf_get_current_comm(&info.comm, sizeof(info.comm));
-  info.stack_id = bpf_get_stackid(ctx, &stack_trace, 0);
-  info.size = ctx->bytes_alloc;
-
-  return mem_alloc((u64)ctx->ptr, &slab_info, &slab_stats, &info);
+  return mem_alloc((u64)ctx->ptr, stack_id, anonymous, ctx->bytes_alloc);
 }
 
 /* from /sys/kernel/debug/tracing/events/kmem/kmalloc_node/format */
@@ -122,13 +122,10 @@ struct SlabKmallocNodeInfo {
 
 SEC("tracepoint/kmem/kmalloc_node")
 int kmalloc_node(struct SlabKmallocNodeInfo *ctx) {
-  struct InfoValue info;
+  u32 stack_id = bpf_get_stackid(ctx, &stack_trace, 0);
+  const char *anonymous = "anonymous";
 
-  __builtin_memset(&info, 0, sizeof(struct InfoValue));
-  info.tgid_pid = bpf_get_current_pid_tgid();
-  info.stack_id = bpf_get_stackid(ctx, &stack_trace, 0);
-  info.size = ctx->bytes_alloc;
-  return mem_alloc((size_t)ctx->ptr, &slab_info, &slab_stats, &info);
+  return mem_alloc((u64)ctx->ptr, stack_id, anonymous, ctx->bytes_alloc);
 }
 
 /* from /sys/kernel/debug/tracing/events/kmem/kfree/format */
@@ -144,10 +141,30 @@ struct SlabKfreeInfo {
 
 SEC("tracepoint/kmem/kfree")
 int kfree(struct SlabKfreeInfo *ctx) {
-  return mem_free((size_t)ctx->ptr, &slab_info, &slab_stats);
+  u64 tgid_pid = bpf_get_current_pid_tgid();
+
+  return mem_free(tgid_pid, (u64)ctx->ptr);
 }
 
-/* from /sys/kernel/debug/tracing/events/kmem/kmem_cache_alloc/format */
+static void set_tgid_pid_slab(struct kmem_cache *cache) {
+  u64 tgid_pid = bpf_get_current_pid_tgid();
+  struct SlabTmpInfo tmp_info;
+  char *name = NULL;
+
+  __builtin_memset(&tmp_info, 0, sizeof(tmp_info));
+  bpf_probe_read_kernel(&name, sizeof(name), &cache->name);
+  bpf_probe_read_kernel_str(tmp_info.slab, sizeof(tmp_info.slab), name);
+
+  bpf_map_update_elem(&tgid_pid_slab, &tgid_pid, &tmp_info, BPF_NOEXIST);
+}
+
+SEC("kprobe/kmem_cache_alloc")
+int kmem_cache_alloc_kprobe(struct pt_regs *ctx) {
+  set_tgid_pid_slab((struct kmem_cache *)PT_REGS_PARM1_CORE(ctx));
+
+  return 0;
+}
+
 struct SlabKmemCacheAllocInfo {
   u16 common_type;
   u8 common_flags;
@@ -162,13 +179,23 @@ struct SlabKmemCacheAllocInfo {
 
 SEC("tracepoint/kmem/kmem_cache_alloc")
 int kmem_cache_alloc(struct SlabKmemCacheAllocInfo *ctx) {
-  struct InfoValue info;
+  u64 tgid_pid = bpf_get_current_pid_tgid();
+  u32 stack_id = bpf_get_stackid(ctx, &stack_trace, 0);
+  struct SlabTmpInfo *tmp_info;
 
-  __builtin_memset(&info, 0, sizeof(struct InfoValue));
-  info.tgid_pid = bpf_get_current_pid_tgid();
-  info.stack_id = bpf_get_stackid(ctx, &stack_trace, 0);
-  info.size = ctx->bytes_alloc;
-  return mem_alloc((size_t)ctx->ptr, &slab_info, &slab_stats, &info);
+  tmp_info = bpf_map_lookup_elem(&tgid_pid_slab, &tgid_pid);
+  if (!tmp_info) {
+    return 0;
+  }
+
+  return mem_alloc((u64)ctx->ptr, stack_id, tmp_info->slab, ctx->bytes_alloc);
+}
+
+SEC("kprobe/kmem_cache_alloc_node")
+int kmem_cache_alloc_node_kprobe(struct pt_regs *ctx) {
+  set_tgid_pid_slab((struct kmem_cache *)PT_REGS_PARM1_CORE(ctx));
+
+  return 0;
 }
 
 /* from /sys/kernel/debug/tracing/events/kmem/kmem_cache_alloc_node/format */
@@ -187,13 +214,16 @@ struct SlabKmemCacheAllocNodeInfo {
 
 SEC("tracepoint/kmem/kmem_cache_alloc_node")
 int kmem_cache_alloc_node(struct SlabKmemCacheAllocNodeInfo *ctx) {
-  struct InfoValue info;
+  u32 stack_id = bpf_get_stackid(ctx, &stack_trace, 0);
+  u64 tgid_pid = bpf_get_current_pid_tgid();
+  char **slab;
 
-  __builtin_memset(&info, 0, sizeof(struct InfoValue));
-  info.tgid_pid = bpf_get_current_pid_tgid();
-  info.stack_id = bpf_get_stackid(ctx, &stack_trace, 0);
-  info.size = ctx->bytes_alloc;
-  return mem_alloc((size_t)ctx->ptr, &slab_info, &slab_stats, &info);
+  slab = bpf_map_lookup_elem(&tgid_pid_slab, &tgid_pid);
+  if (!slab) {
+    return 0;
+  }
+
+  return mem_alloc((u64)ctx->ptr, stack_id, *slab, ctx->bytes_alloc);
 }
 
 /* from /sys/kernel/debug/tracing/events/kmem/kmem_cache_free/format */
@@ -209,43 +239,7 @@ struct SlabKmemCacheFreeInfo {
 
 SEC("tracepoint/kmem/kmem_cache_free")
 int kmem_cache_free(struct SlabKmemCacheFreeInfo *ctx) {
-  return mem_free((size_t)ctx->ptr, &slab_info, &slab_stats);
-}
+  u64 tgid_pid = bpf_get_current_pid_tgid();
 
-/* from /sys/kernel/debug/tracing/events/kmem/mm_page_alloc/format */
-struct PageAllocInfo {
-  u16 common_Type;
-  u8 common_flags;
-  u8 common_preempt_count;
-  int common_pid;
-  u64 pfn;
-  u32 order;
-  u64 gfp_flags;
-  int migrate_type;
-};
-
-SEC("tracepoint/kmem/mm_page_alloc")
-int mm_page_alloc(struct PageAllocInfo *ctx) {
-  struct InfoValue info;
-
-  __builtin_memset(&info, 0, sizeof(struct InfoValue));
-  info.tgid_pid = bpf_get_current_pid_tgid();
-  info.stack_id = bpf_get_stackid(ctx, &stack_trace, 0);
-  info.size = (PAGE_SIZE << ctx->order);
-  return mem_alloc(ctx->pfn, &page_info, &page_stats, &info);
-}
-
-/* from /sys/kernel/debug/tracing/events/kmem/mm_page_free/format */
-struct PageFreeInfo {
-  u16 common_type;
-  u8 common_flags;
-  u8 common_preempt_count;
-  int common_pid;
-  u64 pfn;
-  int order;
-};
-
-SEC("tracepoint/kmem/mm_page_free")
-int mm_page_free(struct PageFreeInfo *ctx) {
-  return mem_free(ctx->pfn, &page_info, &page_stats);
+  return mem_free(tgid_pid, (size_t)ctx->ptr);
 }

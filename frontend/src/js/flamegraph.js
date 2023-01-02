@@ -20,7 +20,7 @@ const FlameGraph = ({data, closeHandler}) => {
 		.selfValue(false)
 
 	useEffect(() => {
-		d3.json("/view/Memory/" + data.timestamp.toString() + "/memory_profile.slab.stack.json").then(data => {
+		d3.json("/view/Memory/" + data.timestamp.toString() + "/slab.stack.json").then(data => {
 				console.log(data)
 				d3.select("#chart")
 					.datum(data)

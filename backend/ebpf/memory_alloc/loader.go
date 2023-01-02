@@ -7,13 +7,17 @@ import (
 	"path/filepath"
 
 	"hermes/backend/symbol"
+	"hermes/backend/utils"
 
 	"github.com/cilium/ebpf"
 	"github.com/cilium/ebpf/link"
 	"github.com/sirupsen/logrus"
 )
 
-//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -cc $BPF_CLANG -cflags $BPF_CFLAGS bpf memory_alloc.c -- -I../header
+//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -target amd64 -cc $BPF_CLANG -cflags $BPF_CFLAGS bpf memory_alloc.c -- -I../header
+
+const SlabInfoFilePostfix = ".slab.info"
+const SlabRecFilePostfix = ".slab.rec"
 
 type MemoryLoader struct {
 	objs        *bpfObjects
@@ -61,12 +65,26 @@ func (loader *MemoryLoader) Load(ctx context.Context) error {
 	}
 	defer tpKfree.Close()
 
+	kpKmemCacheAlloc, err := link.Kprobe("kmem_cache_alloc", loader.objs.KmemCacheAllocKprobe, nil)
+	if err != nil {
+		logrus.Errorf("Failed to open kmem_cache_alloc kprobe, err [%s]", err)
+		return err
+	}
+	defer kpKmemCacheAlloc.Close()
+
 	tpKmemCacheAlloc, err := link.Tracepoint("kmem", "kmem_cache_alloc", loader.objs.KmemCacheAlloc, nil)
 	if err != nil {
 		logrus.Errorf("Failed to open kmem_cache_alloc tracepoint, err [%s]", err)
 		return err
 	}
 	defer tpKmemCacheAlloc.Close()
+
+	kpKmemCacheAllocNode, err := link.Kprobe("kmem_cache_alloc_node", loader.objs.KmemCacheAllocNodeKprobe, nil)
+	if err != nil {
+		logrus.Errorf("Failed to open kmem_cache_alloc_node kprobe, err [%s]", err)
+		return err
+	}
+	defer kpKmemCacheAllocNode.Close()
 
 	tpKmemCacheAllocNode, err := link.Tracepoint("kmem", "kmem_cache_alloc_node", loader.objs.KmemCacheAllocNode, nil)
 	if err != nil {
@@ -82,43 +100,11 @@ func (loader *MemoryLoader) Load(ctx context.Context) error {
 	}
 	defer tpKmemCacheFree.Close()
 
-	tpMmPageAlloc, err := link.Tracepoint("kmem", "mm_page_alloc", loader.objs.MmPageAlloc, nil)
-	if err != nil {
-		logrus.Errorf("Failed to open mm_page_alloc tracepoint, err [%s]", err)
-		return err
-	}
-	defer tpMmPageAlloc.Close()
-
-	tpMmPageFree, err := link.Tracepoint("kmem", "mm_page_free", loader.objs.MmPageFree, nil)
-	if err != nil {
-		logrus.Errorf("Failed to open mm_page_free tracepoint, err [%s]", err)
-		return err
-	}
-	defer tpMmPageFree.Close()
-
 	<-ctx.Done()
 	return nil
 }
 
 const CallStackSize = 127
-
-type MemoryType uint8
-
-const (
-	Slab MemoryType = iota
-	Page
-)
-
-type AllocRecord struct {
-	BytesAlloc     uint64   `json:"bytes_alloc"`
-	CallchainInsts []string `json:"callchain_insts"`
-}
-
-type DataRecord struct {
-	BytesOwned uint64        `json:"bytes_owned"`
-	Comm       string        `json:"comm"`
-	AllocRecs  []AllocRecord `json:"alloc_records"`
-}
 
 func uint8ToString(val []uint8) string {
 	bytes := []byte{}
@@ -135,25 +121,32 @@ func uint8ToString(val []uint8) string {
 	return string(bytes)
 }
 
-func (loader *MemoryLoader) getDataRec(infoMap, statsMap *ebpf.Map, recs *map[uint64]DataRecord) {
-	var addr uint64
-	var info bpfInfoValue
+type AllocDetail struct {
+	BytesAlloc     uint64   `json:"bytes_alloc"`
+	CallchainInsts []string `json:"callchain_insts"`
+}
+
+type AllocRecord struct {
+	Comm         string        `json:"comm"`
+	AllocDetails []AllocDetail `json:"alloc_details"`
+}
+
+type SlabRecord map[uint64]AllocRecord
+
+func (loader *MemoryLoader) getSlabRec(infoMap *ebpf.Map, recs *map[string]SlabRecord) {
+	var taskKey bpfTaskKey
+	var taskInfo bpfTaskInfo
 	infoIter := infoMap.Iterate()
-	for infoIter.Next(&addr, &info) {
-		rec, _ := (*recs)[info.TgidPid]
-		if err := statsMap.Lookup(info.StackId, &rec.BytesOwned); err != nil {
-			logrus.Errorf("Failed to lookup stack id [%d] in stats map", info.StackId)
-			continue
-		}
-
+	for infoIter.Next(&taskKey, &taskInfo) {
+		slab := uint8ToString(taskInfo.Slab[:])
+		rec := (*recs)[slab][taskKey.TgidPid]
 		ips := make([]uint64, CallStackSize)
-		if err := loader.objs.StackTrace.Lookup(info.StackId, &ips); err != nil {
-			logrus.Errorf("Failed to lookup stack id [%d] in stack trace", info.StackId)
+		if err := loader.objs.StackTrace.Lookup(taskInfo.StackId, &ips); err != nil {
 			continue
 		}
 
-		allocRec := AllocRecord{
-			BytesAlloc:     info.Size,
+		allocDetail := AllocDetail{
+			BytesAlloc:     taskInfo.BytesAlloc,
 			CallchainInsts: []string{},
 		}
 		for _, ip := range ips {
@@ -164,58 +157,69 @@ func (loader *MemoryLoader) getDataRec(infoMap, statsMap *ebpf.Map, recs *map[ui
 			if err != nil {
 				symbol = ""
 			}
-			allocRec.CallchainInsts = append(allocRec.CallchainInsts, symbol)
+			allocDetail.CallchainInsts = append(allocDetail.CallchainInsts, symbol)
 		}
-		rec.Comm = uint8ToString(info.Comm[:])
-		rec.AllocRecs = append(rec.AllocRecs, allocRec)
-		(*recs)[info.TgidPid] = rec
+		rec.Comm = uint8ToString(taskInfo.Comm[:])
+		rec.AllocDetails = append(rec.AllocDetails, allocDetail)
+		if _, isExist := (*recs)[slab]; !isExist {
+			(*recs)[slab] = make(map[uint64]AllocRecord)
+		}
+		(*recs)[slab][taskKey.TgidPid] = rec
 	}
 }
 
-func (loader *MemoryLoader) getDataRecByType(memoryType MemoryType) *map[uint64]DataRecord {
-	recs := map[uint64]DataRecord{}
-	switch memoryType {
-	case Slab:
-		loader.getDataRec(loader.objs.SlabInfo, loader.objs.SlabStats, &recs)
-	case Page:
-		loader.getDataRec(loader.objs.PageInfo, loader.objs.PageStats, &recs)
-	}
-	return &recs
-}
-
-func (loader *MemoryLoader) writeToFile(outputPath string, recs *map[uint64]DataRecord) error {
-	bytes, err := json.Marshal(recs)
-	if err != nil {
-		return err
-	}
+func (loader *MemoryLoader) writeToFile(outputPath string, bytes *[]byte) error {
 	fp, err := os.OpenFile(outputPath, os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
 		return err
 	}
 	defer fp.Close()
 
-	if _, err = fp.WriteString(string(bytes)); err != nil {
+	if _, err = fp.WriteString(string(*bytes)); err != nil {
 		return err
 	}
 	return nil
 }
 
+func (loader *MemoryLoader) writeSlabInfo(outputPath string, info *utils.SlabInfo) error {
+	bytes, err := json.Marshal(info)
+	if err != nil {
+		return err
+	}
+
+	return loader.writeToFile(outputPath, &bytes)
+}
+
+func (loader *MemoryLoader) writeSlabRec(outputPath string, recs *map[string]SlabRecord) error {
+	bytes, err := json.Marshal(recs)
+	if err != nil {
+		return err
+	}
+
+	return loader.writeToFile(outputPath, &bytes)
+}
+
 func (loader *MemoryLoader) StoreData(outputPath string) error {
-	recs := loader.getDataRecByType(Slab)
-	slabOutputFile := outputPath + string(".slab")
-	if err := loader.writeToFile(slabOutputFile, recs); err != nil {
+	slabInfoFile := outputPath + SlabInfoFilePostfix
+	slabInfo, err := utils.GetSlabInfo()
+	if err != nil {
+		logrus.Errorf("Failed to get slab info, err [%s]", err)
+		return err
+	}
+	if err := loader.writeSlabInfo(slabInfoFile, slabInfo); err != nil {
+		logrus.Errorf("Failed to write slab info to file, err [%s]", err)
+		return err
+	}
+	loader.outputFiles = append(loader.outputFiles, filepath.Base(slabInfoFile))
+
+	slabRecFile := outputPath + SlabRecFilePostfix
+	slabRecs := map[string]SlabRecord{}
+	loader.getSlabRec(loader.objs.SlabInfo, &slabRecs)
+	if err := loader.writeSlabRec(slabRecFile, &slabRecs); err != nil {
 		logrus.Errorf("Failed to write slab records to file, err [%s]", err)
 		return err
 	}
-	loader.outputFiles = append(loader.outputFiles, filepath.Base(slabOutputFile))
-
-	recs = loader.getDataRecByType(Page)
-	pageOutputFile := outputPath + string(".page")
-	if err := loader.writeToFile(pageOutputFile, recs); err != nil {
-		logrus.Errorf("Failed to write page records to file, err [%s]", err)
-		return err
-	}
-	loader.outputFiles = append(loader.outputFiles, filepath.Base(pageOutputFile))
+	loader.outputFiles = append(loader.outputFiles, filepath.Base(slabRecFile))
 
 	return nil
 }
