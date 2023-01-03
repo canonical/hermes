@@ -13,16 +13,8 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-type JobClass uint8
-
-const (
-	Disposable JobClass = iota
-	Periodic
-)
-
-func (jobClass JobClass) String() string {
-	return [...]string{"Disposable", "Periodic"}[jobClass]
-}
+const Disposable = "disposable"
+const Periodic = "periodic"
 
 type Routine struct {
 	Cond     map[string]interface{} `yaml:"condition"`
@@ -33,7 +25,7 @@ type Routine struct {
 
 type Job struct {
 	Name       string
-	Class      JobClass           `yaml:"class"`
+	Class      string             `yaml:"class"`
 	Interval   uint32             `yaml:"interval"`
 	AptInstall []string           `yaml:"aptInstall"`
 	Routines   map[string]Routine `yaml:"routines"`

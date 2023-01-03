@@ -3,6 +3,8 @@ package collector
 import (
 	"context"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 type JobTicker struct {
@@ -21,8 +23,7 @@ func NewJobTicker() (*JobTicker, error) {
 func (jobTicker *JobTicker) AddJob(job Job) {
 	jobTicker.cancel[job.Name] = make(chan bool)
 
-	switch job.Class {
-	case Disposable:
+	if job.Class == Disposable {
 		go func() {
 			timer := time.NewTimer(time.Microsecond)
 			defer timer.Stop()
@@ -34,7 +35,7 @@ func (jobTicker *JobTicker) AddJob(job Job) {
 				jobTicker.ReadyJobs <- job.Name
 			}
 		}()
-	case Periodic:
+	} else if job.Class == Periodic {
 		go func() {
 			ticker := time.NewTicker(time.Duration(job.Interval) * time.Second)
 			defer ticker.Stop()
@@ -49,6 +50,8 @@ func (jobTicker *JobTicker) AddJob(job Job) {
 				}
 			}
 		}()
+	} else {
+		logrus.Errorf("Unhandled class [%s]", job.Class)
 	}
 }
 
