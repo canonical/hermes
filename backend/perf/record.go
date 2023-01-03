@@ -60,20 +60,18 @@ type SampleID struct {
 
 type MmapRecord struct {
 	Header
-	RecordType RecordType `json:"record_type"`
-	Pid        uint32     `json:"pid"`
-	Tid        uint32     `json:"tid"`
-	Addr       uint64     `json:"addr"`
-	Len        uint64     `json:"len"`
-	Pgoff      uint64     `json:"pgoff"`
-	Filename   string     `json:"filename"`
+	Pid      uint32 `json:"pid"`
+	Tid      uint32 `json:"tid"`
+	Addr     uint64 `json:"addr"`
+	Len      uint64 `json:"len"`
+	Pgoff    uint64 `json:"pgoff"`
+	Filename string `json:"filename"`
 	SampleID
 }
 
 func (rec *MmapRecord) Decode(raw *RawRecord, attr *Attr, symbolizer *symbol.Symbolizer) {
 	parser := FieldParser(raw.Data)
 	rec.Header = raw.Header
-	rec.RecordType = MmapRec
 	parser.Uint32(&rec.Pid)
 	parser.Uint32(&rec.Tid)
 	parser.Uint64(&rec.Addr)
@@ -85,16 +83,14 @@ func (rec *MmapRecord) Decode(raw *RawRecord, attr *Attr, symbolizer *symbol.Sym
 
 type LostRecord struct {
 	Header
-	RecordType RecordType `json:"record_type"`
-	ID         uint64     `json:"id"`
-	Lost       uint64     `json:"lost"`
+	ID   uint64 `json:"id"`
+	Lost uint64 `json:"lost"`
 	SampleID
 }
 
 func (rec *LostRecord) Decode(raw *RawRecord, attr *Attr, symbolizer *symbol.Symbolizer) {
 	parser := FieldParser(raw.Data)
 	rec.Header = raw.Header
-	rec.RecordType = LostRec
 	parser.Uint64(&rec.ID)
 	parser.Uint64(&rec.Lost)
 	parser.ParseSampleID(attr.Options.SampleIDAll, attr.SampleFormat, &rec.SampleID)
@@ -102,17 +98,15 @@ func (rec *LostRecord) Decode(raw *RawRecord, attr *Attr, symbolizer *symbol.Sym
 
 type CommRecord struct {
 	Header
-	RecordType RecordType `json:"record_type"`
-	Pid        uint32     `json:"pid"`
-	Tid        uint32     `json:"tid"`
-	Comm       string     `json:"comm"`
+	Pid  uint32 `json:"pid"`
+	Tid  uint32 `json:"tid"`
+	Comm string `json:"comm"`
 	SampleID
 }
 
 func (rec *CommRecord) Decode(raw *RawRecord, attr *Attr, symbolizer *symbol.Symbolizer) {
 	parser := FieldParser(raw.Data)
 	rec.Header = raw.Header
-	rec.RecordType = CommRec
 	parser.Uint32(&rec.Pid)
 	parser.Uint32(&rec.Tid)
 	parser.String(&rec.Comm)
@@ -121,19 +115,17 @@ func (rec *CommRecord) Decode(raw *RawRecord, attr *Attr, symbolizer *symbol.Sym
 
 type ExitRecord struct {
 	Header
-	RecordType RecordType `json:"record_type"`
-	Pid        uint32     `json:"pid"`
-	Ppid       uint32     `json:"ppid"`
-	Tid        uint32     `json:"tid"`
-	Ptid       uint32     `json:"ptid"`
-	Time       uint64     `json:"time"`
+	Pid  uint32 `json:"pid"`
+	Ppid uint32 `json:"ppid"`
+	Tid  uint32 `json:"tid"`
+	Ptid uint32 `json:"ptid"`
+	Time uint64 `json:"time"`
 	SampleID
 }
 
 func (rec *ExitRecord) Decode(raw *RawRecord, attr *Attr, symbolizer *symbol.Symbolizer) {
 	parser := FieldParser(raw.Data)
 	rec.Header = raw.Header
-	rec.RecordType = ExitRec
 	parser.Uint32(&rec.Pid)
 	parser.Uint32(&rec.Ppid)
 	parser.Uint32(&rec.Tid)
@@ -144,17 +136,15 @@ func (rec *ExitRecord) Decode(raw *RawRecord, attr *Attr, symbolizer *symbol.Sym
 
 type ThrottleRecord struct {
 	Header
-	RecordType RecordType `json:"record_type"`
-	Time       uint64     `json:"time"`
-	ID         uint64     `json:"id"`
-	StreamID   uint64     `json:"stream_id"`
+	Time     uint64 `json:"time"`
+	ID       uint64 `json:"id"`
+	StreamID uint64 `json:"stream_id"`
 	SampleID
 }
 
 func (rec *ThrottleRecord) Decode(raw *RawRecord, attr *Attr, symbolizer *symbol.Symbolizer) {
 	parser := FieldParser(raw.Data)
 	rec.Header = raw.Header
-	rec.RecordType = ThrottleRec
 	parser.Uint64(&rec.Time)
 	parser.Uint64(&rec.ID)
 	parser.Uint64(&rec.StreamID)
@@ -163,17 +153,15 @@ func (rec *ThrottleRecord) Decode(raw *RawRecord, attr *Attr, symbolizer *symbol
 
 type UnthrottleRecord struct {
 	Header
-	RecordType RecordType `json:"record_type"`
-	Time       uint64     `json:"time"`
-	ID         uint64     `json:"id"`
-	StreamID   uint64     `json:"stream_id"`
+	Time     uint64 `json:"time"`
+	ID       uint64 `json:"id"`
+	StreamID uint64 `json:"stream_id"`
 	SampleID
 }
 
 func (rec *UnthrottleRecord) Decode(raw *RawRecord, attr *Attr, symbolizer *symbol.Symbolizer) {
 	parser := FieldParser(raw.Data)
 	rec.Header = raw.Header
-	rec.RecordType = UnthrottleRec
 	parser.Uint64(&rec.Time)
 	parser.Uint64(&rec.ID)
 	parser.Uint64(&rec.StreamID)
@@ -182,19 +170,17 @@ func (rec *UnthrottleRecord) Decode(raw *RawRecord, attr *Attr, symbolizer *symb
 
 type ForkRecord struct {
 	Header
-	RecordType RecordType `json:"record_type"`
-	Pid        uint32     `json:"pid"`
-	Ppid       uint32     `json:"ppid"`
-	Tid        uint32     `json:"tid"`
-	Ptid       uint32     `json:"ptid"`
-	Time       uint64     `json:"time"`
+	Pid  uint32 `json:"pid"`
+	Ppid uint32 `json:"ppid"`
+	Tid  uint32 `json:"tid"`
+	Ptid uint32 `json:"ptid"`
+	Time uint64 `json:"time"`
 	SampleID
 }
 
 func (rec *ForkRecord) Decode(raw *RawRecord, attr *Attr, symbolizer *symbol.Symbolizer) {
 	parser := FieldParser(raw.Data)
 	rec.Header = raw.Header
-	rec.RecordType = ForkRec
 	parser.Uint32(&rec.Pid)
 	parser.Uint32(&rec.Ppid)
 	parser.Uint32(&rec.Tid)
@@ -216,7 +202,6 @@ type ReadContent struct {
 
 type ReadRecord struct {
 	Header
-	RecordType  RecordType  `json:"record_type"`
 	Pid         uint32      `json:"pid"`
 	Tid         uint32      `json:"tid"`
 	ReadContent ReadContent `json:"values"`
@@ -226,7 +211,6 @@ type ReadRecord struct {
 func (rec *ReadRecord) Decode(raw *RawRecord, attr *Attr, symbolizer *symbol.Symbolizer) {
 	parser := FieldParser(raw.Data)
 	rec.Header = raw.Header
-	rec.RecordType = ReadRec
 	parser.Uint32(&rec.Pid)
 	parser.Uint32(&rec.Tid)
 	parser.ParseReadContent(attr.ReadFormat, &rec.ReadContent)
@@ -235,9 +219,8 @@ func (rec *ReadRecord) Decode(raw *RawRecord, attr *Attr, symbolizer *symbol.Sym
 
 type GroupReadRecord struct {
 	Header
-	RecordType       RecordType `json:"record_type"`
-	Pid              uint32     `json:"pid"`
-	Tid              uint32     `json:"tid"`
+	Pid              uint32 `json:"pid"`
+	Tid              uint32 `json:"tid"`
 	GroupReadContent GroupReadContent
 	SampleID
 }
@@ -245,7 +228,6 @@ type GroupReadRecord struct {
 func (rec *GroupReadRecord) Decode(raw *RawRecord, attr *Attr, symbolizer *symbol.Symbolizer) {
 	parser := FieldParser(raw.Data)
 	rec.Header = raw.Header
-	rec.RecordType = ReadRec
 	parser.Uint32(&rec.Pid)
 	parser.Uint32(&rec.Tid)
 	parser.ParseGroupReadContent(attr.ReadFormat, &rec.GroupReadContent)
@@ -283,7 +265,6 @@ type Instruction struct {
 
 type SampleRecord struct {
 	Header
-	RecordType       RecordType    `json:"record_type"`
 	Identifier       uint64        `json:"identifier"`
 	Inst             Instruction   `json:"instruction"`
 	Pid              uint32        `json:"pid"`
@@ -326,7 +307,6 @@ func getSymbol(symbolizer *symbol.Symbolizer, inst *Instruction) {
 func (rec *SampleRecord) Decode(raw *RawRecord, attr *Attr, symbolizer *symbol.Symbolizer) {
 	parser := FieldParser(raw.Data)
 	rec.Header = raw.Header
-	rec.RecordType = SampleRec
 	parser.Uint64Cond(attr.SampleFormat.Identifier, &rec.Identifier)
 	parser.Uint64Cond(attr.SampleFormat.IP, &rec.Inst.IP)
 	getSymbol(symbolizer, &rec.Inst)
@@ -403,7 +383,6 @@ func (rec *SampleRecord) Decode(raw *RawRecord, attr *Attr, symbolizer *symbol.S
 
 type GroupSampleRecord struct {
 	Header
-	RecordType       RecordType       `json:"record_type"`
 	Identifier       uint64           `json:"identifier"`
 	Inst             Instruction      `json:"instruction"`
 	Pid              uint32           `json:"pid"`
@@ -437,7 +416,6 @@ type GroupSampleRecord struct {
 func (rec *GroupSampleRecord) Decode(raw *RawRecord, attr *Attr, symbolizer *symbol.Symbolizer) {
 	parser := FieldParser(raw.Data)
 	rec.Header = raw.Header
-	rec.RecordType = SampleRec
 	parser.Uint64Cond(attr.SampleFormat.Identifier, &rec.Identifier)
 	parser.Uint64Cond(attr.SampleFormat.IP, &rec.Inst.IP)
 	getSymbol(symbolizer, &rec.Inst)
@@ -514,26 +492,24 @@ func (rec *GroupSampleRecord) Decode(raw *RawRecord, attr *Attr, symbolizer *sym
 
 type Mmap2Record struct {
 	Header
-	RecordType    RecordType `json:"record_type"`
-	Pid           uint32     `json:"pid"`
-	Tid           uint32     `json:"tid"`
-	Addr          uint64     `json:"addr"`
-	Len           uint64     `json:"len"`
-	Pgoff         uint64     `json:"pgoff"`
-	MajorID       uint32     `json:"maj"`
-	MinorID       uint32     `json:"min"`
-	Ino           uint64     `json:"ino"`
-	InoGeneration uint64     `json:"ino_generation"`
-	Prot          uint32     `json:"prot"`
-	Flags         uint32     `json:"flags"`
-	Filename      string     `json:"filename"`
+	Pid           uint32 `json:"pid"`
+	Tid           uint32 `json:"tid"`
+	Addr          uint64 `json:"addr"`
+	Len           uint64 `json:"len"`
+	Pgoff         uint64 `json:"pgoff"`
+	MajorID       uint32 `json:"maj"`
+	MinorID       uint32 `json:"min"`
+	Ino           uint64 `json:"ino"`
+	InoGeneration uint64 `json:"ino_generation"`
+	Prot          uint32 `json:"prot"`
+	Flags         uint32 `json:"flags"`
+	Filename      string `json:"filename"`
 	SampleID
 }
 
 func (rec *Mmap2Record) Decode(raw *RawRecord, attr *Attr, symbolizer *symbol.Symbolizer) {
 	parser := FieldParser(raw.Data)
 	rec.Header = raw.Header
-	rec.RecordType = Mmap2Rec
 	parser.Uint32(&rec.Pid)
 	parser.Uint32(&rec.Tid)
 	parser.Uint64(&rec.Addr)
@@ -551,17 +527,15 @@ func (rec *Mmap2Record) Decode(raw *RawRecord, attr *Attr, symbolizer *symbol.Sy
 
 type AuxRecord struct {
 	Header
-	RecordType RecordType `json:"record_type"`
-	Offset     uint64     `json:"aux_offset"`
-	Size       uint64     `json:"aux_size"`
-	Flags      uint64     `json:"flags"`
+	Offset uint64 `json:"aux_offset"`
+	Size   uint64 `json:"aux_size"`
+	Flags  uint64 `json:"flags"`
 	SampleID
 }
 
 func (rec *AuxRecord) Decode(raw *RawRecord, attr *Attr, symbolizer *symbol.Symbolizer) {
 	parser := FieldParser(raw.Data)
 	rec.Header = raw.Header
-	rec.RecordType = AuxRec
 	parser.Uint64(&rec.Offset)
 	parser.Uint64(&rec.Size)
 	parser.Uint64(&rec.Flags)
@@ -570,16 +544,14 @@ func (rec *AuxRecord) Decode(raw *RawRecord, attr *Attr, symbolizer *symbol.Symb
 
 type ItraceStartRecord struct {
 	Header
-	RecordType RecordType `json:"record_type"`
-	Pid        uint32     `json:"pid"`
-	Tid        uint32     `json:"tid"`
+	Pid uint32 `json:"pid"`
+	Tid uint32 `json:"tid"`
 	SampleID
 }
 
 func (rec *ItraceStartRecord) Decode(raw *RawRecord, attr *Attr, symbolizer *symbol.Symbolizer) {
 	parser := FieldParser(raw.Data)
 	rec.Header = raw.Header
-	rec.RecordType = ItraceStartRec
 	parser.Uint32(&rec.Pid)
 	parser.Uint32(&rec.Tid)
 	parser.ParseSampleID(attr.Options.SampleIDAll, attr.SampleFormat, &rec.SampleID)
@@ -587,44 +559,38 @@ func (rec *ItraceStartRecord) Decode(raw *RawRecord, attr *Attr, symbolizer *sym
 
 type LostSamplesRecord struct {
 	Header
-	RecordType RecordType `json:"record_type"`
-	Lost       uint64     `json:"lost"`
+	Lost uint64 `json:"lost"`
 	SampleID
 }
 
 func (rec *LostSamplesRecord) Decode(raw *RawRecord, attr *Attr, symbolizer *symbol.Symbolizer) {
 	parser := FieldParser(raw.Data)
 	rec.Header = raw.Header
-	rec.RecordType = LostSamplesRec
 	parser.Uint64(&rec.Lost)
 	parser.ParseSampleID(attr.Options.SampleIDAll, attr.SampleFormat, &rec.SampleID)
 }
 
 type SwitchRecord struct {
 	Header
-	RecordType RecordType `json:"record_type"`
 	SampleID
 }
 
 func (rec *SwitchRecord) Decode(raw *RawRecord, attr *Attr, symbolizer *symbol.Symbolizer) {
 	parser := FieldParser(raw.Data)
 	rec.Header = raw.Header
-	rec.RecordType = SwitchRec
 	parser.ParseSampleID(attr.Options.SampleIDAll, attr.SampleFormat, &rec.SampleID)
 }
 
 type SwitchCPUWideRecord struct {
 	Header
-	RecordType  RecordType `json:"record_type"`
-	NextPrevPid uint32     `json:"next_prev_pid"`
-	NextPrevTid uint32     `json:"next_prev_tid"`
+	NextPrevPid uint32 `json:"next_prev_pid"`
+	NextPrevTid uint32 `json:"next_prev_tid"`
 	SampleID
 }
 
 func (rec *SwitchCPUWideRecord) Decode(raw *RawRecord, attr *Attr, symbolizer *symbol.Symbolizer) {
 	parser := FieldParser(raw.Data)
 	rec.Header = raw.Header
-	rec.RecordType = SwitchCPUWideRec
 	parser.Uint32(&rec.NextPrevPid)
 	parser.Uint32(&rec.NextPrevTid)
 	parser.ParseSampleID(attr.Options.SampleIDAll, attr.SampleFormat, &rec.SampleID)
@@ -637,7 +603,6 @@ type NamespacesContent struct {
 
 type NamespacesRecord struct {
 	Header
-	RecordType RecordType          `json:"record_type"`
 	Pid        uint32              `json:"pid"`
 	Tid        uint32              `json:"tid"`
 	Namespaces []NamespacesContent `json:"namespaces"`
@@ -647,7 +612,6 @@ type NamespacesRecord struct {
 func (rec *NamespacesRecord) Decode(raw *RawRecord, attr *Attr, symbolizer *symbol.Symbolizer) {
 	parser := FieldParser(raw.Data)
 	rec.Header = raw.Header
-	rec.RecordType = NamespacesRec
 	parser.Uint32(&rec.Pid)
 	parser.Uint32(&rec.Tid)
 
