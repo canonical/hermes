@@ -3,12 +3,12 @@ package collector
 import (
 	"context"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"sync"
 	"time"
 
 	"hermes/backend/perf"
+	"hermes/backend/utils"
 	"hermes/parser"
 
 	"github.com/sirupsen/logrus"
@@ -62,7 +62,7 @@ func (instance *TaskProfileInstance) Process(instContext interface{}, outputPath
 	var waitGroup sync.WaitGroup
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(profileContext.Timeout)*time.Second)
 	defer cancel()
-	for cpu := 0; cpu < runtime.NumCPU(); cpu++ {
+	for cpu := 0; cpu < utils.GetCpuNum(); cpu++ {
 		waitGroup.Add(1)
 		path := outputPath + string(".") + strconv.Itoa(cpu)
 		taskResult.OutputFiles = append(taskResult.OutputFiles, filepath.Base(path))
