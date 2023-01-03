@@ -21,12 +21,12 @@ func GetMemoryEbpfParser() (*MemoryEbpfParser, error) {
 func (parser *MemoryEbpfParser) getSlabInfo(path string) (*utils.SlabInfo, error) {
 	var slabInfo utils.SlabInfo
 
-	data, err := ioutil.ReadFile(path)
+	bytes, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := json.Unmarshal(data, &slabInfo); err != nil {
+	if err := json.Unmarshal(bytes, &slabInfo); err != nil {
 		return nil, err
 	}
 	return &slabInfo, nil
@@ -35,12 +35,12 @@ func (parser *MemoryEbpfParser) getSlabInfo(path string) (*utils.SlabInfo, error
 func (parser *MemoryEbpfParser) getSlabRec(path string) (*map[string]SlabRecord, error) {
 	slabRec := make(map[string]SlabRecord)
 
-	data, err := ioutil.ReadFile(path)
+	bytes, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := json.Unmarshal(data, &slabRec); err != nil {
+	if err := json.Unmarshal(bytes, &slabRec); err != nil {
 		return nil, err
 	}
 	return &slabRec, nil
@@ -105,7 +105,7 @@ func (parser *MemoryEbpfParser) Parse(logDir string, logs []string, outputDir st
 	var slabRec *map[string]SlabRecord = nil
 	for _, log := range logs {
 		var err error
-		path := logDir + string("/") + log
+		path := logDir + "/" + log
 		if strings.Contains(log, SlabInfoFilePostfix) {
 			slabInfo, err = parser.getSlabInfo(path)
 		} else if strings.Contains(log, SlabRecFilePostfix) {
@@ -119,7 +119,7 @@ func (parser *MemoryEbpfParser) Parse(logDir string, logs []string, outputDir st
 		}
 	}
 
-	outputPath := outputDir + string("/slab.stack.json")
+	outputPath := outputDir + "/slab.stack.json"
 	if err := parser.writeStackCollapsedData(slabInfo, slabRec, outputPath); err != nil {
 		return err
 	}

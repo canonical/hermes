@@ -126,7 +126,7 @@ func loadTask(taskName string, paramOverride interface{}, taskContext *TaskConte
 		return err
 	}
 
-	param, err := ioutil.ReadFile(taskConfigPath)
+	bytes, err := ioutil.ReadFile(taskConfigPath)
 	if err != nil {
 		return err
 	}
@@ -136,9 +136,9 @@ func loadTask(taskName string, paramOverride interface{}, taskContext *TaskConte
 		if err != nil {
 			return err
 		}
-		return unmarshalTask(taskName, &param, &_paramOverride, taskContext)
+		return unmarshalTask(taskName, &bytes, &_paramOverride, taskContext)
 	}
-	return unmarshalTask(taskName, &param, nil, taskContext)
+	return unmarshalTask(taskName, &bytes, nil, taskContext)
 }
 
 func NewTask(routine Routine) (*Task, error) {

@@ -20,13 +20,13 @@ type Parser struct {
 }
 
 func NewParser(metaPath string, outputDir string) (*Parser, error) {
-	data, err := ioutil.ReadFile(metaPath)
+	bytes, err := ioutil.ReadFile(metaPath)
 	if err != nil {
 		return nil, err
 	}
 
 	var parser Parser
-	if err := yaml.Unmarshal(data, &parser.logMeta); err != nil {
+	if err := yaml.Unmarshal(bytes, &parser.logMeta); err != nil {
 		return nil, err
 	}
 
@@ -43,6 +43,8 @@ func (parser *Parser) getInstance(meta Metadata) (ParserInstance, error) {
 		return nil, nil
 	case CpuInfo:
 		return GetCpuInfoParser()
+	case CpuProfile:
+		return GetCpuProfileParser()
 	case MemoryInfo:
 		return GetMemoryInfoParser()
 	case MemoryEbpf:

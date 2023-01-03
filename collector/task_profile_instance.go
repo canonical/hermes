@@ -40,7 +40,7 @@ func (instance *TaskProfileInstance) Process(instContext interface{}, outputPath
 	profileContext := instContext.(ProfileContext)
 	taskResult := TaskResult{
 		Err:         nil,
-		ParserType:  parser.None,
+		ParserType:  parser.CpuProfile,
 		OutputFiles: []string{},
 	}
 	var err error
@@ -56,7 +56,7 @@ func (instance *TaskProfileInstance) Process(instContext interface{}, outputPath
 		},
 	}
 	perf.TaskClock.SetAttr(&attr)
-	attr.SetSamplePeriod(1)
+	attr.SetSamplePeriod(1000)
 	attr.SetWakeupEvents(1)
 
 	var waitGroup sync.WaitGroup

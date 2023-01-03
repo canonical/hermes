@@ -54,25 +54,25 @@ func (cache *KsymCache) LoadSymbols() error {
 	scanner := bufio.NewScanner(fp)
 
 	for scanner.Scan() {
-		data := scanner.Bytes()
-		addr, err := strconv.ParseUint(unsafeString(data[:16]), 16, 64)
+		bytes := scanner.Bytes()
+		addr, err := strconv.ParseUint(unsafeString(bytes[:16]), 16, 64)
 		if err != nil {
-			logrus.Errorf("Failed to parse kallsym data, err [%s]", err)
+			logrus.Errorf("Failed to parse kallsym bytes, err [%s]", err)
 			continue
 		}
 
-		symbolEndIdx := len(data)
-		for i := 19; i < len(data); i++ {
-			if data[i] == ' ' {
+		symbolEndIdx := len(bytes)
+		for i := 19; i < len(bytes); i++ {
+			if bytes[i] == ' ' {
 				symbolEndIdx = i
 				break
 			}
 		}
 
-		if symbolType := strings.ToLower(string(data[17:18])); symbolType == "b" || symbolType == "d" || symbolType == "r" {
+		if symbolType := strings.ToLower(string(bytes[17:18])); symbolType == "b" || symbolType == "d" || symbolType == "r" {
 			continue
 		}
-		cache.ksymRecords = append(cache.ksymRecords, KsymRecord{addr: addr, symbol: string(data[19:symbolEndIdx])})
+		cache.ksymRecords = append(cache.ksymRecords, KsymRecord{addr: addr, symbol: string(bytes[19:symbolEndIdx])})
 	}
 	if err := scanner.Err(); err != nil {
 		return err

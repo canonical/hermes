@@ -56,12 +56,12 @@ func NewJob(configPath string) (*Job, error) {
 		return nil, err
 	}
 
-	data, err := ioutil.ReadFile(configPath)
+	bytes, err := ioutil.ReadFile(configPath)
 	if err != nil {
 		return nil, err
 	}
 
-	err = yaml.Unmarshal(data, &job)
+	err = yaml.Unmarshal(bytes, &job)
 	if err != nil {
 		return nil, err
 	}
