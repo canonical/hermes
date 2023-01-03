@@ -3,6 +3,7 @@ import {createRoot} from 'react-dom/client'
 import styled from 'styled-components'
 import axios from 'axios'
 import schema from '../../schema_pb'
+import CpuView from './cpu_view'
 import MemoryView from './memory_view'
 
 const Tab = styled.button`
@@ -27,6 +28,8 @@ var tasks = []
 
 const TabContent = ({task}) => {
   switch (task) {
+  case 'CPU':
+    return <CpuView />
   case 'Memory':
     return <MemoryView />
   }

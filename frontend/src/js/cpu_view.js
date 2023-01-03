@@ -122,7 +122,7 @@ const Tooltip = ({scales, margins, dimensions, data, flameGraphHandler, hasFlame
 	);
 }
 
-const MemoryViewChart = ({margins, dimensions, data, flameGraphHandler, hasFlameGraphData}) => {
+const CpuViewChart = ({margins, dimensions, data, flameGraphHandler, hasFlameGraphData}) => {
 	const xScale = d3.scaleLinear()
 		.domain(d3.extent(data, d => d.timestamp))
 		.range([margins.left, dimensions.width - margins.right])
@@ -151,7 +151,7 @@ const MemoryViewChart = ({margins, dimensions, data, flameGraphHandler, hasFlame
 	)
 }
 
-const MemoryView = () => {
+const CpuView = () => {
 	const [data, setData] = useState()
 	const [flameGraphData, setFlameGraphData] = useState()
 	const hasFlameGraphData = () => {
@@ -159,7 +159,7 @@ const MemoryView = () => {
 	}
 
 	useEffect(() => {
-		d3.csv('/view/Memory/overview').then(data => {
+		d3.csv('/view/CPU/overview').then(data => {
 			setData(data)
 		})
 	}, [])
@@ -176,12 +176,12 @@ const MemoryView = () => {
 	}
 	return (
 			<div>
-				<MemoryViewChart className="overview-chart" margins={margins} dimensions={dimensions} data={data}
+				<CpuViewChart className="overview-chart" margins={margins} dimensions={dimensions} data={data}
 					flameGraphHandler={setFlameGraphData} hasFlameGraphData={hasFlameGraphData} />
-				{flameGraphData && <FlameGraph timestamp={flameGraphData.timestamp} category="Memory"
-					stackFile="slab.stack.json" closeHandler={() => {setFlameGraphData(null)}} />}
+				{flameGraphData && <FlameGraph timestamp={flameGraphData.timestamp} category="CPU"
+					stackFile="overall_cpu.stack.json" closeHandler={() => {setFlameGraphData(null)}} />}
 			</div>
 	)
 }
 
-export default MemoryView
+export default CpuView

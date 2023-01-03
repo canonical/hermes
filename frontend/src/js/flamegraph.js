@@ -4,9 +4,9 @@ import {flamegraph} from 'd3-flame-graph'
 import "../css/flamegraph.scss"
 import '../../node_modules/d3-flame-graph/dist/d3-flamegraph.css'
 
-const FlameGraph = ({data, closeHandler}) => {
+const FlameGraph = ({timestamp, category, stackFile, closeHandler}) => {
 	const chart = <div id='chart'></div>
-	const date = new Date(data.timestamp * 1000)
+	const date = new Date(timestamp * 1000)
 	const title = ('0' + date.getMonth()).slice(-2) + '/' +
 		('0' + date.getDay()).slice(-2) + ' ' + ('0' + date.getHours()).slice(-2) + ':' +
 		('0' + date.getMinutes()).slice(-2) + ':' + ('0' + date.getSeconds()).slice(-2)
@@ -20,8 +20,7 @@ const FlameGraph = ({data, closeHandler}) => {
 		.selfValue(false)
 
 	useEffect(() => {
-		d3.json("/view/Memory/" + data.timestamp.toString() + "/slab.stack.json").then(data => {
-				console.log(data)
+		d3.json("/view/" + category + "/" + timestamp.toString() + "/" + stackFile).then(data => {
 				d3.select("#chart")
 					.datum(data)
 					.call(flameGraph);
