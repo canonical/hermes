@@ -35,6 +35,9 @@ endif
 ifeq ($(shell $(DPKG) -s libbpf-dev 2> /dev/null; $(ECHO) $$?), 1)
 	$(APT) install -y libbpf-dev
 endif
+ifeq ($(shell $(DPKG) -s gcc-multilib 2> /dev/null; $(ECHO) $$?), 1)
+	$(APT) install -y gcc-multilib
+endif
 ifeq ($(shell $(DPKG) -s protobuf-compiler 2> /dev/null; $(ECHO) $$?), 1)
 	$(APT) install -y protobuf-compiler
 endif
