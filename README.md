@@ -15,9 +15,9 @@ make install_ui
 
 # Running
 `hermes` is composed of three different components. Please follow the steps to get a performance analysis result.
-* Collecting metrics
+### Collecting metrics
 `collector` is a binary to collect system performance metrics. The metrics will store under /var/log/collector folder.
-* Parsing metrics
+### Parsing metrics
 `parser` is a tool to parse the collected metrics into a specific format for UI to show graphs. The parsed data will store under $HOME/view folder.
-* UI
+### UI
 `webserver` is a binary to show data under $HOME/view to UI. It can be run on localhost and use `http://127.0.0.1:8080/` to see the performance analysis result.
