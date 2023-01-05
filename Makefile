@@ -11,6 +11,7 @@ APT            := /usr/bin/apt
 DPKG           := /usr/bin/dpkg
 ECHO           := /usr/bin/echo
 WHICH          := /usr/bin/which
+CURL           := /usr/bin/curl
 PROTO_DIR      := proto
 FRONTEND_DIR   := frontend
 BUILD_DIR      := ./build/
@@ -41,9 +42,7 @@ endif
 ifeq ($(shell $(DPKG) -s protobuf-compiler 2> /dev/null; $(ECHO) $$?), 1)
 	$(APT) install -y protobuf-compiler
 endif
-ifeq ($(shell $(DPKG) -s npm 2> /dev/null; $(ECHO) $$?), 1)
-	$(APT) install -y npm
-endif
+	$(CURL) -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash - &&apt-get install -y nodejs
 	$(SNAP) install go --classic
 	$(GO) install google.golang.org/protobuf/cmd/protoc-gen-go
 
