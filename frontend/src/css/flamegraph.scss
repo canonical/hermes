@@ -1,10 +1,10 @@
 .box {
 	background-color: #E8E8E8;
 	position: fixed;
-	width: 1010px;
+	width: 1500px;
 	height: 760px;
 	top: 8%;
-	left: 15%;
+	left: 8%;
 	border-radius: 4px;
 	border: 1px solid #999;
 	overflow: auto;
@@ -21,7 +21,7 @@
 		content: 'x';
 		cursor: pointer;
 		position: fixed;
-		left: calc(15% + 1000px);
+		left: calc(8% + 1490px);
 		top: calc(8% - 10px);
 		background: #ededed;
 		width: 25px;

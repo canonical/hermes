@@ -11,10 +11,9 @@ const FlameGraph = ({timestamp, category, stackFile, closeHandler}) => {
 		('0' + date.getDay()).slice(-2) + ' ' + ('0' + date.getHours()).slice(-2) + ':' +
 		('0' + date.getMinutes()).slice(-2) + ':' + ('0' + date.getSeconds()).slice(-2)
 	const flameGraph = flamegraph()
-		.width(960)
+		.width(1460)
 		.cellHeight(18)
 		.transitionDuration(750)
-		.minFrameSize(5)
 		.transitionEase(d3.easeCubic)
 		.sort(true)
 		.selfValue(false)
