@@ -15,8 +15,8 @@ const MemTotal = "MemTotal"
 const MemFree = "MemFree"
 
 type MemoryInfoRecord struct {
-	Thresholds map[string]uint64 `json:"thresholds"`
-	MemInfo    *utils.MemInfo    `json:"memInfo"`
+	Thresholds map[string]int64 `json:"thresholds"`
+	MemInfo    *utils.MemInfo   `json:"memInfo"`
 }
 
 type MemoryInfoParser struct{}
@@ -54,7 +54,7 @@ func (parser *MemoryInfoParser) getCSVData(timestamp string, rec *MemoryInfoReco
 		return []string{}, fmt.Errorf("Threshold [MemFree] does not exist")
 	}
 
-	return []string{timestamp, strconv.FormatUint(memTotal*percent/100, 10), strconv.FormatUint(memFree, 10)}, nil
+	return []string{timestamp, strconv.FormatInt(memTotal*percent/100, 10), strconv.FormatInt(memFree, 10)}, nil
 }
 
 func (parser *MemoryInfoParser) writeCSVData(csvData []string, path string) error {

@@ -122,7 +122,7 @@ func uint8ToString(val []uint8) string {
 }
 
 type AllocDetail struct {
-	BytesAlloc     uint64   `json:"bytes_alloc"`
+	BytesAlloc     int64    `json:"bytes_alloc"`
 	CallchainInsts []string `json:"callchain_insts"`
 }
 
@@ -146,7 +146,7 @@ func (loader *MemoryLoader) getSlabRec(infoMap *ebpf.Map, recs *map[string]SlabR
 		}
 
 		allocDetail := AllocDetail{
-			BytesAlloc:     taskInfo.BytesAlloc,
+			BytesAlloc:     int64(taskInfo.BytesAlloc),
 			CallchainInsts: []string{},
 		}
 		for _, ip := range ips {

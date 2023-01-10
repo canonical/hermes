@@ -15,8 +15,8 @@ const MemoryInfoTask = "memory_info"
 const MemTotal = "MemTotal"
 
 type MemoryInfoContext struct {
-	Thresholds map[string]uint64 `json:"thresholds" yaml:"thresholds"`
-	MemInfo    *utils.MemInfo    `json:"memInfo"`
+	Thresholds map[string]int64 `json:"thresholds" yaml:"thresholds"`
+	MemInfo    *utils.MemInfo   `json:"memInfo"`
 }
 
 type TaskMemoryInfoInstance struct{}

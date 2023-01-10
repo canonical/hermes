@@ -46,33 +46,33 @@ func (parser *MemoryEbpfParser) getSlabRec(path string) (*map[string]SlabRecord,
 	return &slabRec, nil
 }
 
-func (parser *MemoryEbpfParser) getStacks(slabName string, pid uint32,
-	allocRec *AllocRecord, flameGraphData *utils.FlameGraphData) uint64 {
-	var bytesObserved uint64 = 0
+func (parser *MemoryEbpfParser) getStacks(slabName string,
+	allocRec *AllocRecord, flameGraphData *utils.FlameGraphData) int64 {
+	var bytesObserved int64 = 0
 
 	for _, allocDetail := range allocRec.AllocDetails {
 		stack := []string{}
 		for _, inst := range allocDetail.CallchainInsts {
 			stack = append(stack, inst)
 		}
-		stack = append(stack, fmt.Sprintf("%s (%d)", allocRec.Comm, pid))
+		stack = append(stack, allocRec.Comm)
 		stack = append(stack, RecordedLabel)
 		stack = append(stack, slabName)
-		flameGraphData.Add(&stack, len(stack)-1, int(allocDetail.BytesAlloc))
+		flameGraphData.Add(&stack, len(stack)-1, allocDetail.BytesAlloc)
 		bytesObserved = bytesObserved + allocDetail.BytesAlloc
 	}
 	return bytesObserved
 }
 
 func (parser *MemoryEbpfParser) parseStacks(slabName string,
-	bytes uint64, rec *SlabRecord, flameGraphData *utils.FlameGraphData) {
-	for tgidPid, allocRec := range *rec {
-		bytesObserved := parser.getStacks(slabName, uint32(tgidPid), &allocRec, flameGraphData)
+	bytes int64, rec *SlabRecord, flameGraphData *utils.FlameGraphData) {
+	for _, allocRec := range *rec {
+		bytesObserved := parser.getStacks(slabName, &allocRec, flameGraphData)
 		bytes = bytes - bytesObserved
 	}
 	if bytes > 0 {
 		stack := []string{UnrecordedLabel, slabName}
-		flameGraphData.Add(&stack, len(stack)-1, int(bytes))
+		flameGraphData.Add(&stack, len(stack)-1, bytes)
 	}
 }
 

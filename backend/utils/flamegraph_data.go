@@ -7,7 +7,7 @@ import (
 
 type FlameGraphData struct {
 	Name     string
-	Value    int
+	Value    int64
 	Children map[string]*FlameGraphData
 }
 
@@ -19,7 +19,7 @@ func GetFlameGraphData() *FlameGraphData {
 	}
 }
 
-func (data *FlameGraphData) Add(stack *[]string, idx, val int) {
+func (data *FlameGraphData) Add(stack *[]string, idx int, val int64) {
 	data.Value += val
 	if idx < 0 {
 		return
@@ -45,7 +45,7 @@ func (data *FlameGraphData) MarshalJSON() ([]byte, error) {
 
 	return json.Marshal(&struct {
 		Name     string           `json:"name"`
-		Value    int              `json:"value"`
+		Value    int64            `json:"value"`
 		Children []FlameGraphData `json:"children"`
 	}{
 		Name:     data.Name,

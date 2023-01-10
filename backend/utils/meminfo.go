@@ -10,8 +10,8 @@ import (
 const MemInfoEntry = "/proc/meminfo"
 const SlabInfoEntry = "/proc/slabinfo"
 
-type MemInfo map[string]uint64
-type SlabInfo map[string]uint64
+type MemInfo map[string]int64
+type SlabInfo map[string]int64
 
 func GetMemInfo() (*MemInfo, error) {
 	file, err := os.Open(MemInfoEntry)
@@ -30,7 +30,7 @@ func GetMemInfo() (*MemInfo, error) {
 			continue
 		}
 		val := strings.TrimSpace(strings.TrimRight(tokens[1], "kB"))
-		percent, err := strconv.ParseUint(val, 10, 64)
+		percent, err := strconv.ParseInt(val, 10, 64)
 		if err != nil {
 			continue
 		}
@@ -60,12 +60,12 @@ func GetSlabInfo() (*SlabInfo, error) {
 			continue
 		}
 
-		numObjs, err := strconv.ParseUint(fields[2], 10, 64)
+		numObjs, err := strconv.ParseInt(fields[2], 10, 64)
 		if err != nil {
 			continue
 		}
 
-		objSize, err := strconv.ParseUint(fields[3], 10, 64)
+		objSize, err := strconv.ParseInt(fields[3], 10, 64)
 		if err != nil {
 			continue
 		}
