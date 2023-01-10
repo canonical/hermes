@@ -7,8 +7,8 @@ import '../../node_modules/d3-flame-graph/dist/d3-flamegraph.css'
 const FlameGraph = ({timestamp, category, stackFile, closeHandler}) => {
 	const chart = <div id='chart'></div>
 	const date = new Date(timestamp * 1000)
-	const title = ('0' + date.getMonth()).slice(-2) + '/' +
-		('0' + date.getDay()).slice(-2) + ' ' + ('0' + date.getHours()).slice(-2) + ':' +
+	const title = ('0' + (date.getMonth() + 1)).slice(-2) + '/' +
+		('0' + date.getDate()).slice(-2) + ' ' + ('0' + date.getHours()).slice(-2) + ':' +
 		('0' + date.getMinutes()).slice(-2) + ':' + ('0' + date.getSeconds()).slice(-2)
 	const flameGraph = flamegraph()
 		.width(1460)
