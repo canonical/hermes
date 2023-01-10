@@ -3,7 +3,6 @@ package parser
 import (
 	"bufio"
 	"encoding/json"
-	"fmt"
 	"hermes/backend/perf"
 	"hermes/backend/utils"
 	"os"
@@ -55,10 +54,6 @@ func (parser *CpuProfileParser) parseStackCollapsedData(logPath string, flameGra
 }
 
 func (parser *CpuProfileParser) Parse(logDir string, logs []string, outputDir string) error {
-	if len(logs) != utils.GetCpuNum() {
-		return fmt.Errorf("Unexpected number of logs, count [%d]", len(logs))
-	}
-
 	flameGraphData := utils.GetFlameGraphData()
 	for _, log := range logs {
 		logPath := logDir + "/" + log
