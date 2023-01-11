@@ -241,5 +241,5 @@ SEC("tracepoint/kmem/kmem_cache_free")
 int kmem_cache_free(struct SlabKmemCacheFreeInfo *ctx) {
   u64 tgid_pid = bpf_get_current_pid_tgid();
 
-  return mem_free(tgid_pid, (size_t)ctx->ptr);
+  return mem_free(tgid_pid, (u64)ctx->ptr);
 }
