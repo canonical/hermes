@@ -155,7 +155,7 @@ static void set_tgid_pid_slab(struct kmem_cache *cache) {
   bpf_probe_read_kernel(&name, sizeof(name), &cache->name);
   bpf_probe_read_kernel_str(tmp_info.slab, sizeof(tmp_info.slab), name);
 
-  bpf_map_update_elem(&tgid_pid_slab, &tgid_pid, &tmp_info, BPF_NOEXIST);
+  bpf_map_update_elem(&tgid_pid_slab, &tgid_pid, &tmp_info, BPF_ANY);
 }
 
 SEC("kprobe/kmem_cache_alloc")
