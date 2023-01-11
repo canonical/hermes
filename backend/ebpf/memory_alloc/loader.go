@@ -149,7 +149,8 @@ func (loader *MemoryLoader) getSlabRec(infoMap *ebpf.Map, recs *map[string]SlabR
 			BytesAlloc:     int64(taskInfo.BytesAlloc),
 			CallchainInsts: []string{},
 		}
-		for _, ip := range ips {
+		/* skip first entry (duplicated) */
+		for _, ip := range ips[1:] {
 			if ip == 0 {
 				break
 			}
