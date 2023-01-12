@@ -216,14 +216,14 @@ SEC("tracepoint/kmem/kmem_cache_alloc_node")
 int kmem_cache_alloc_node(struct SlabKmemCacheAllocNodeInfo *ctx) {
   u32 stack_id = bpf_get_stackid(ctx, &stack_trace, 0);
   u64 tgid_pid = bpf_get_current_pid_tgid();
-  char **slab;
+  struct SlabTmpInfo *tmp_info;
 
-  slab = bpf_map_lookup_elem(&tgid_pid_slab, &tgid_pid);
-  if (!slab) {
+  tmp_info = bpf_map_lookup_elem(&tgid_pid_slab, &tgid_pid);
+  if (!tmp_info) {
     return 0;
   }
 
-  return mem_alloc((u64)ctx->ptr, stack_id, *slab, ctx->bytes_alloc);
+  return mem_alloc((u64)ctx->ptr, stack_id, tmp_info->slab, ctx->bytes_alloc);
 }
 
 /* from /sys/kernel/debug/tracing/events/kmem/kmem_cache_free/format */
