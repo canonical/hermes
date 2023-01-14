@@ -2,7 +2,7 @@
 `hermes` is a time-series profiling tool for analyzing system performance issues from different dimensions.
 
 # Building
-`hermes` shall be built on Ubuntu Kinetic or higher versions because of npm version limitation.
+`hermes` shall be built on Ubuntu Focal or higher versions because of package dependency.
 ```
 git clone https://github.com/yukariatlas/hermes.git
 cd hermes
