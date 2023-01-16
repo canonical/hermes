@@ -48,14 +48,27 @@ type TaskInstance interface {
 	Process(context interface{}, outputPath string, result chan TaskResult)
 }
 
+var taskTypeMapper = map[string]TaskType {
+	CpuInfoTask: CpuInfo,
+	MemoryInfoTask: MemoryInfo,
+	CPUProfileTask: Profile,
+	PSITask: PSI,
+	MemoryEbpfTask: Ebpf,
+}
+
 type Task struct {
 	Cond TaskContext
 	Task TaskContext
 }
 
 func unmarshalTask(taskName string, param, paramOverride *[]byte, taskContext *TaskContext) error {
-	switch taskName {
-	case CpuInfoTask:
+	taskType, isExist := taskTypeMapper[taskName]
+	if !isExist {
+		return fmt.Errorf("Task name [%s] doesn't define a task type", taskName)
+	}
+
+	switch taskType {
+	case CpuInfo:
 		var context CpuInfoContext
 		if err := yaml.Unmarshal(*param, &context); err != nil {
 			return err
@@ -65,9 +78,8 @@ func unmarshalTask(taskName string, param, paramOverride *[]byte, taskContext *T
 				return err
 			}
 		}
-		taskContext.Type = CpuInfo
 		taskContext.Context = context
-	case MemoryInfoTask:
+	case MemoryInfo:
 		var context MemoryInfoContext
 		if err := yaml.Unmarshal(*param, &context); err != nil {
 			return err
@@ -77,9 +89,8 @@ func unmarshalTask(taskName string, param, paramOverride *[]byte, taskContext *T
 				return err
 			}
 		}
-		taskContext.Type = MemoryInfo
 		taskContext.Context = context
-	case CPUProfileTask:
+	case Profile:
 		var context ProfileContext
 		if err := yaml.Unmarshal(*param, &context); err != nil {
 			return err
@@ -89,9 +100,8 @@ func unmarshalTask(taskName string, param, paramOverride *[]byte, taskContext *T
 				return err
 			}
 		}
-		taskContext.Type = Profile
 		taskContext.Context = context
-	case PSITask:
+	case PSI:
 		var context PSIContext
 		if err := yaml.Unmarshal(*param, &context); err != nil {
 			return err
@@ -101,9 +111,8 @@ func unmarshalTask(taskName string, param, paramOverride *[]byte, taskContext *T
 				return err
 			}
 		}
-		taskContext.Type = PSI
 		taskContext.Context = context
-	case MemoryEbpfTask:
+	case Ebpf:
 		var context EbpfContext
 		if err := yaml.Unmarshal(*param, &context); err != nil {
 			return err
@@ -113,10 +122,10 @@ func unmarshalTask(taskName string, param, paramOverride *[]byte, taskContext *T
 				return err
 			}
 		}
-		taskContext.Type = Ebpf
 		taskContext.Context = context
 	}
 
+	taskContext.Type = taskType
 	return nil
 }
 
