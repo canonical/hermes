@@ -65,18 +65,14 @@ func (runner *JobRunner) newJob(job Job) {
 		}
 
 		taskResult := task.Condition(outputPath)
-		condFail := false
-		if taskResult.Err != nil {
-			condFail = true
-			routineName = routine.CondFail
-		}
 		if len(taskResult.OutputFiles) > 0 {
 			logMeta.Metas = append(logMeta.Metas, parser.Metadata{
 				Type: taskResult.ParserType,
 				Logs: taskResult.OutputFiles,
 			})
 		}
-		if condFail {
+		if taskResult.Err != nil {
+			routineName = routine.CondFail
 			continue
 		}
 

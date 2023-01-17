@@ -159,9 +159,11 @@ func NewTask(routine Routine) (*Task, error) {
 		}
 	}
 
-	taskName := reflect.ValueOf(routine.Task).MapKeys()[0].Interface().(string)
-	if err := loadTask(taskName, routine.Task[taskName], &task.Task); err != nil {
-		return nil, err
+	if len(routine.Task) == 1 {
+		taskName := reflect.ValueOf(routine.Task).MapKeys()[0].Interface().(string)
+		if err := loadTask(taskName, routine.Task[taskName], &task.Task); err != nil {
+			return nil, err
+		}
 	}
 
 	return &task, nil
@@ -218,11 +220,13 @@ func (task *Task) Condition(outputPath string) TaskResult {
 
 func (task *Task) Process(outputPath string, result chan TaskResult) {
 	if task.Task.Type == None {
-		result <- TaskResult{
-			Err:         nil,
-			ParserType:  parser.None,
-			OutputFiles: []string{},
-		}
+		go func(){
+			result <- TaskResult{
+				Err:         nil,
+				ParserType:  parser.None,
+				OutputFiles: []string{},
+			}
+		}()
 		return
 	}
 	go task.execute(&task.Task, outputPath, result)

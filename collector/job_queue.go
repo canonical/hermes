@@ -58,7 +58,7 @@ func NewJob(configPath string) (*Job, error) {
 		return nil, err
 	}
 	for _, routine := range job.Routines {
-		if len(routine.Cond) > 1 || len(routine.Task) != 1 {
+		if len(routine.Cond) > 1 || len(routine.Task) > 1 {
 			return nil, fmt.Errorf("Unexpected config format")
 		}
 	}
