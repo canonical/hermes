@@ -4,7 +4,7 @@
 # Building
 `hermes` shall be built on Ubuntu Focal or higher versions because of package dependency.
 ```
-git clone https://github.com/yukariatlas/hermes.git
+git clone git@github.com:canonical/hermes.git
 cd hermes
 make
 # install binaries and config
