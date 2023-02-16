@@ -51,6 +51,8 @@ func (watcher *ConfigWatcher) handleConfig(op fsnotify.Op, configPath string) er
 	}
 
 	switch op {
+	case fsnotify.Write:
+		watcher.jobQueueComm.ModifyJob <- *job
 	case fsnotify.Create:
 		watcher.jobQueueComm.AddJob <- *job
 	case fsnotify.Remove:
@@ -67,6 +69,7 @@ func (watcher *ConfigWatcher) Run(ctx context.Context, configDir string) error {
 
 		monitorOps := map[fsnotify.Op]bool{
 			fsnotify.Create: true,
+			fsnotify.Write:  true,
 			fsnotify.Remove: true,
 		}
 

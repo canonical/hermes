@@ -2,11 +2,11 @@ package collector
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"reflect"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -68,6 +68,7 @@ func NewJob(configPath string) (*Job, error) {
 
 type JobQueueComm struct {
 	AddJob    chan Job
+	ModifyJob chan Job
 	RemoveJob chan string
 	Ack       chan error
 }
@@ -93,6 +94,7 @@ func NewJobQueue() (*JobQueue, error) {
 	return &JobQueue{
 		Comm: JobQueueComm{
 			AddJob:    make(chan Job),
+			ModifyJob: make(chan Job),
 			RemoveJob: make(chan string),
 			Ack:       make(chan error)},
 		jobProtos: make(map[string]Job),
@@ -119,7 +121,12 @@ func (jobQueue *JobQueue) initJob(job *Job) error {
 
 func (jobQueue *JobQueue) addJob(job Job) error {
 	if _, isExist := jobQueue.jobProtos[job.Name]; isExist {
-		return errors.New("Duplicated job name")
+		if reflect.DeepEqual(job, jobQueue.jobProtos[job.Name]) {
+			return nil
+		}
+		if err := jobQueue.removeJob(job.Name); err != nil {
+			return err
+		}
 	}
 	jobQueue.jobProtos[job.Name] = job
 
@@ -129,6 +136,16 @@ func (jobQueue *JobQueue) addJob(job Job) error {
 
 	jobQueue.ticker.AddJob(job)
 	return nil
+}
+
+func (jobQueue *JobQueue) modifyJob(job Job) error {
+	if _, isExist := jobQueue.jobProtos[job.Name]; isExist {
+		if err := jobQueue.removeJob(job.Name); err != nil {
+			return err
+		}
+	}
+
+	return jobQueue.addJob(job)
 }
 
 func (jobQueue *JobQueue) removeJob(jobName string) error {
@@ -160,6 +177,8 @@ func (jobQueue *JobQueue) run(ctx context.Context) {
 			return
 		case job := <-jobQueue.Comm.AddJob:
 			jobQueue.Comm.Ack <- jobQueue.addJob(job)
+		case job := <-jobQueue.Comm.ModifyJob:
+			jobQueue.Comm.Ack <- jobQueue.modifyJob(job)
 		case jobName := <-jobQueue.Comm.RemoveJob:
 			jobQueue.Comm.Ack <- jobQueue.removeJob(jobName)
 		case jobName := <-jobQueue.ticker.ReadyJobs:
