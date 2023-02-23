@@ -14,9 +14,9 @@ import (
 const PSITask = "psi"
 
 type PSIContext struct {
-	Type utils.PSIType `json:"type" yaml:"type"`
-	Some []float64     `json:"some" yaml:"some"`
-	Full []float64     `json:"full" yaml:"full"`
+	Type utils.PSIType
+	Some []float64
+	Full []float64
 }
 
 type TaskPSIInstance struct{}
@@ -60,7 +60,7 @@ func (instance *TaskPSIInstance) ToFile(psiResult *utils.PSIResult, outputPath s
 }
 
 func (instance *TaskPSIInstance) Process(instContext interface{}, outputPath string, result chan TaskResult) {
-	psiContext := instContext.(PSIContext)
+	psiContext := instContext.(*PSIContext)
 	taskResult := TaskResult{
 		Err:         nil,
 		ParserType:  parser.None,

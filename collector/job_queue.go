@@ -19,15 +19,15 @@ const Periodic = "periodic"
 type Routine struct {
 	Cond     map[string]interface{} `yaml:"condition"`
 	Task     map[string]interface{} `yaml:"content"`
-	CondSucc string                 `yaml:"condSucc"`
-	CondFail string                 `yaml:"condFail"`
+	CondSucc string                 `yaml:"cond_succ"`
+	CondFail string                 `yaml:"cond_fail"`
 }
 
 type Job struct {
 	Name       string
 	Class      string             `yaml:"class"`
 	Interval   uint32             `yaml:"interval"`
-	AptInstall []string           `yaml:"aptInstall"`
+	AptInstall []string           `yaml:"apt_install"`
 	Routines   map[string]Routine `yaml:"routines"`
 	Start      string             `yaml:"start"`
 }

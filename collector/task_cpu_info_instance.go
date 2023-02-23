@@ -14,8 +14,8 @@ import (
 const CpuInfoTask = "cpu_info"
 
 type CpuInfoContext struct {
-	Threshold uint64 `json:"threshold" yaml:"threshold"`
-	Usage     uint64 `json:"usage"`
+	Threshold uint64
+	Usage     uint64
 }
 
 type TaskCpuInfoInstance struct{}
@@ -46,7 +46,7 @@ func (instance *TaskCpuInfoInstance) writeToFile(context *CpuInfoContext, path s
 }
 
 func (instance *TaskCpuInfoInstance) Process(instContext interface{}, outputPath string, result chan TaskResult) {
-	cpuInfoContext := instContext.(CpuInfoContext)
+	cpuInfoContext := instContext.(*CpuInfoContext)
 	taskResult := TaskResult{
 		Err:         nil,
 		ParserType:  parser.CpuInfo,
@@ -63,14 +63,14 @@ func (instance *TaskCpuInfoInstance) Process(instContext interface{}, outputPath
 		logrus.Errorf("Failed to get cpu usage, set zero as default value")
 		cpuInfoContext.Usage = 0
 	}
-	if instance.isBeyondExpectation(&cpuInfoContext) {
+	if instance.isBeyondExpectation(cpuInfoContext) {
 		err = nil
 	} else {
 		err = fmt.Errorf("CpuInfo value does not exceed threshold")
 	}
 
 	cpuCondFile := outputPath + ".cond"
-	if err := instance.writeToFile(&cpuInfoContext, cpuCondFile); err != nil {
+	if err := instance.writeToFile(cpuInfoContext, cpuCondFile); err != nil {
 		logrus.Errorf("Failed to write to file [%s], err [%s]", cpuCondFile, err)
 	}
 	taskResult.OutputFiles = append(taskResult.OutputFiles, filepath.Base(cpuCondFile))

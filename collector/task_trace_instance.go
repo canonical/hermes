@@ -8,11 +8,11 @@ import (
 )
 
 type TraceContext struct {
-	Timeout         uint32   `json:"timeout"`
-	CurrentTracer   string   `json:"currentTracer"`
-	TraceOptions    []string `json:"traceOptions"`
-	SetEvent        []string `json:"setEvent"`
-	SetFtraceFilter []string `json:"setFtraceFilter"`
+	Timeout         uint32
+	CurrentTracer   string
+	TraceOptions    []string
+	SetEvent        []string
+	SetFtraceFilter []string
 }
 
 type TaskTraceInstance struct {
@@ -30,7 +30,7 @@ func NewTaskTraceInstance() (TaskInstance, error) {
 }
 
 func (instance *TaskTraceInstance) Process(instContext interface{}, outputPath string, result chan TaskResult) {
-	traceContext := instContext.(TraceContext)
+	traceContext := instContext.(*TraceContext)
 	taskResult := TaskResult{
 		Err:         nil,
 		ParserType:  parser.None,

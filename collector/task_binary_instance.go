@@ -7,7 +7,7 @@ import (
 )
 
 type BinaryContext struct {
-	Cmds []string `json:"cmds"`
+	Cmds []string
 }
 
 type TaskBinaryInstance struct{}
@@ -17,7 +17,7 @@ func NewTaskBinaryInstance() (TaskInstance, error) {
 }
 
 func (instance *TaskBinaryInstance) Process(instContext interface{}, outputPath string, result chan TaskResult) {
-	binaryContext := instContext.(BinaryContext)
+	binaryContext := instContext.(*BinaryContext)
 	taskResult := TaskResult{
 		Err:         nil,
 		ParserType:  parser.None,

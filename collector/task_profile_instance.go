@@ -17,7 +17,7 @@ import (
 const CPUProfileTask = "cpu_profile"
 
 type ProfileContext struct {
-	Timeout uint32 `json:"timeout" yaml:"timeout"`
+	Timeout uint32
 }
 
 type TaskProfileInstance struct{}
@@ -37,7 +37,7 @@ func (instance *TaskProfileInstance) profile(ctx context.Context, cpu int, attr 
 }
 
 func (instance *TaskProfileInstance) Process(instContext interface{}, outputPath string, result chan TaskResult) {
-	profileContext := instContext.(ProfileContext)
+	profileContext := instContext.(*ProfileContext)
 	taskResult := TaskResult{
 		Err:         nil,
 		ParserType:  parser.CpuProfile,

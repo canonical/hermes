@@ -48,11 +48,11 @@ type TaskInstance interface {
 	Process(context interface{}, outputPath string, result chan TaskResult)
 }
 
-var taskTypeMapper = map[string]TaskType {
-	CpuInfoTask: CpuInfo,
+var taskTypeMapper = map[string]TaskType{
+	CpuInfoTask:    CpuInfo,
 	MemoryInfoTask: MemoryInfo,
 	CPUProfileTask: Profile,
-	PSITask: PSI,
+	PSITask:        PSI,
 	MemoryEbpfTask: Ebpf,
 }
 
@@ -67,64 +67,29 @@ func unmarshalTask(taskName string, param, paramOverride *[]byte, taskContext *T
 		return fmt.Errorf("Task name [%s] doesn't define a task type", taskName)
 	}
 
+	var context interface{}
 	switch taskType {
 	case CpuInfo:
-		var context CpuInfoContext
-		if err := yaml.Unmarshal(*param, &context); err != nil {
-			return err
-		}
-		if paramOverride != nil {
-			if err := yaml.Unmarshal(*paramOverride, &context); err != nil {
-				return err
-			}
-		}
-		taskContext.Context = context
+		context = &CpuInfoContext{}
 	case MemoryInfo:
-		var context MemoryInfoContext
-		if err := yaml.Unmarshal(*param, &context); err != nil {
-			return err
-		}
-		if paramOverride != nil {
-			if err := yaml.Unmarshal(*paramOverride, &context); err != nil {
-				return err
-			}
-		}
-		taskContext.Context = context
+		context = &MemoryInfoContext{}
 	case Profile:
-		var context ProfileContext
-		if err := yaml.Unmarshal(*param, &context); err != nil {
-			return err
-		}
-		if paramOverride != nil {
-			if err := yaml.Unmarshal(*paramOverride, &context); err != nil {
-				return err
-			}
-		}
-		taskContext.Context = context
+		context = &ProfileContext{}
 	case PSI:
-		var context PSIContext
-		if err := yaml.Unmarshal(*param, &context); err != nil {
-			return err
-		}
-		if paramOverride != nil {
-			if err := yaml.Unmarshal(*paramOverride, &context); err != nil {
-				return err
-			}
-		}
-		taskContext.Context = context
+		context = &PSIContext{}
 	case Ebpf:
-		var context EbpfContext
-		if err := yaml.Unmarshal(*param, &context); err != nil {
-			return err
-		}
-		if paramOverride != nil {
-			if err := yaml.Unmarshal(*paramOverride, &context); err != nil {
-				return err
-			}
-		}
-		taskContext.Context = context
+		context = &EbpfContext{}
 	}
 
+	if err := yaml.Unmarshal(*param, context); err != nil {
+		return err
+	}
+	if paramOverride != nil {
+		if err := yaml.Unmarshal(*paramOverride, context); err != nil {
+			return err
+		}
+	}
+	taskContext.Context = context
 	taskContext.Type = taskType
 	return nil
 }
@@ -220,7 +185,7 @@ func (task *Task) Condition(outputPath string) TaskResult {
 
 func (task *Task) Process(outputPath string, result chan TaskResult) {
 	if task.Task.Type == None {
-		go func(){
+		go func() {
 			result <- TaskResult{
 				Err:         nil,
 				ParserType:  parser.None,

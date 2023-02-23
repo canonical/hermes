@@ -13,8 +13,8 @@ import (
 const MemoryEbpfTask = "memory_ebpf"
 
 type EbpfContext struct {
-	Timeout  uint32        `json:"timeout" yaml:"timeout"`
-	EbpfType ebpf.EbpfType `json:"ebpf_type" yaml:"ebpf_type"`
+	Timeout  uint32
+	EbpfType ebpf.EbpfType
 }
 
 type TaskEbpfInstance struct{}
@@ -32,7 +32,7 @@ func (instance *TaskEbpfInstance) getParserType(ebpfType ebpf.EbpfType) parser.P
 }
 
 func (instance *TaskEbpfInstance) Process(instContext interface{}, outputPath string, result chan TaskResult) {
-	ebpfContext := instContext.(EbpfContext)
+	ebpfContext := instContext.(*EbpfContext)
 	taskResult := TaskResult{
 		Err:         nil,
 		ParserType:  parser.None,

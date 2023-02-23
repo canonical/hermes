@@ -15,8 +15,8 @@ const MemoryInfoTask = "memory_info"
 const MemTotal = "MemTotal"
 
 type MemoryInfoContext struct {
-	Thresholds map[string]int64 `json:"thresholds" yaml:"thresholds"`
-	MemInfo    *utils.MemInfo   `json:"memInfo"`
+	Thresholds map[string]int64
+	MemInfo    *utils.MemInfo
 }
 
 type TaskMemoryInfoInstance struct{}
@@ -62,7 +62,7 @@ func (instance *TaskMemoryInfoInstance) writeToFile(context *MemoryInfoContext, 
 }
 
 func (instance *TaskMemoryInfoInstance) Process(instContext interface{}, outputPath string, result chan TaskResult) {
-	memoryInfoContext := instContext.(MemoryInfoContext)
+	memoryInfoContext := instContext.(*MemoryInfoContext)
 	taskResult := TaskResult{
 		Err:         nil,
 		ParserType:  parser.MemoryInfo,
@@ -80,14 +80,14 @@ func (instance *TaskMemoryInfoInstance) Process(instContext interface{}, outputP
 		return
 	}
 
-	if instance.isBeyondExpectation(&memoryInfoContext) {
+	if instance.isBeyondExpectation(memoryInfoContext) {
 		err = nil
 	} else {
 		err = fmt.Errorf("MemInfo value does not exceed thresholds")
 	}
 
 	memCondFile := outputPath + ".cond"
-	if err := instance.writeToFile(&memoryInfoContext, memCondFile); err != nil {
+	if err := instance.writeToFile(memoryInfoContext, memCondFile); err != nil {
 		logrus.Errorf("Failed to write to file [%s], err [%s]", memCondFile, err)
 	}
 	taskResult.OutputFiles = append(taskResult.OutputFiles, filepath.Base(memCondFile))
