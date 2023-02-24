@@ -7,6 +7,8 @@ import (
 	"hermes/parser"
 )
 
+const TraceTask = "trace"
+
 type TraceContext struct {
 	Timeout         uint32
 	CurrentTracer   string

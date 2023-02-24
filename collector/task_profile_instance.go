@@ -14,7 +14,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const CPUProfileTask = "cpu_profile"
+const ProfileTask = "profile"
 
 type ProfileContext struct {
 	Timeout uint32

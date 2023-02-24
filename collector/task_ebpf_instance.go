@@ -10,7 +10,7 @@ import (
 	"github.com/cilium/ebpf/rlimit"
 )
 
-const MemoryEbpfTask = "memory_ebpf"
+const EbpfTask = "ebpf"
 
 type EbpfContext struct {
 	Timeout  uint32

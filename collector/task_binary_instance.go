@@ -6,6 +6,8 @@ import (
 	"hermes/parser"
 )
 
+const BinaryTask = "binary"
+
 type BinaryContext struct {
 	Cmds []string
 }

@@ -13,6 +13,7 @@ import (
 
 type TaskType uint32
 
+const taskTypeKey = "task_type"
 const (
 	None TaskType = iota
 	Binary
@@ -24,11 +25,22 @@ const (
 	MemoryInfo
 )
 
-func (taskType TaskType) String() string {
-	return [...]string{
-		"Binary", "Trace", "Profile",
-		"Ebpf", "PSI", "CpuInfo", "MemoryInfo",
-	}[taskType]
+func parseTaskType(val string) TaskType {
+	mapper := map[string]TaskType{
+		BinaryTask:     Binary,
+		TraceTask:      Trace,
+		ProfileTask:    Profile,
+		EbpfTask:       Ebpf,
+		PSITask:        PSI,
+		CpuInfoTask:    CpuInfo,
+		MemoryInfoTask: MemoryInfo,
+	}
+
+	taskType, isExist := mapper[val]
+	if !isExist {
+		return None
+	}
+	return taskType
 }
 
 const taskConfigDir = "/root/config/tasks/"
@@ -48,41 +60,34 @@ type TaskInstance interface {
 	Process(context interface{}, outputPath string, result chan TaskResult)
 }
 
-var taskTypeMapper = map[string]TaskType{
-	CpuInfoTask:    CpuInfo,
-	MemoryInfoTask: MemoryInfo,
-	CPUProfileTask: Profile,
-	PSITask:        PSI,
-	MemoryEbpfTask: Ebpf,
-}
-
 type Task struct {
 	Cond TaskContext
 	Task TaskContext
 }
 
-func unmarshalTask(taskName string, param, paramOverride *[]byte, taskContext *TaskContext) error {
-	taskType, isExist := taskTypeMapper[taskName]
-	if !isExist {
-		return fmt.Errorf("Task name [%s] doesn't define a task type", taskName)
-	}
-
+func unmarshalTask(taskType string, param, paramOverride *[]byte, taskContext *TaskContext) error {
 	var context interface{}
 	switch taskType {
-	case CpuInfo:
-		context = &CpuInfoContext{}
-	case MemoryInfo:
-		context = &MemoryInfoContext{}
-	case Profile:
+	case BinaryTask:
+		context = &BinaryContext{}
+	case TraceTask:
+		context = &TraceContext{}
+	case ProfileTask:
 		context = &ProfileContext{}
-	case PSI:
-		context = &PSIContext{}
-	case Ebpf:
+	case EbpfTask:
 		context = &EbpfContext{}
+	case PSITask:
+		context = &PSIContext{}
+	case CpuInfoTask:
+		context = &CpuInfoContext{}
+	case MemoryInfoTask:
+		context = &MemoryInfoContext{}
 	}
 
-	if err := yaml.Unmarshal(*param, context); err != nil {
-		return err
+	if param != nil {
+		if err := yaml.Unmarshal(*param, context); err != nil {
+			return err
+		}
 	}
 	if paramOverride != nil {
 		if err := yaml.Unmarshal(*paramOverride, context); err != nil {
@@ -90,29 +95,36 @@ func unmarshalTask(taskName string, param, paramOverride *[]byte, taskContext *T
 		}
 	}
 	taskContext.Context = context
-	taskContext.Type = taskType
+	taskContext.Type = parseTaskType(taskType)
 	return nil
 }
 
 func loadTask(taskName string, paramOverride interface{}, taskContext *TaskContext) error {
+	var _paramOverride *[]byte = nil
 	taskConfigPath := string(taskConfigDir) + taskName + string(".yaml")
-	if _, err := os.Stat(taskConfigPath); err != nil {
-		return err
-	}
-
-	bytes, err := ioutil.ReadFile(taskConfigPath)
-	if err != nil {
-		return err
-	}
 
 	if paramOverride != nil {
-		_paramOverride, err := yaml.Marshal(paramOverride)
+		val, err := yaml.Marshal(paramOverride)
 		if err != nil {
 			return err
 		}
-		return unmarshalTask(taskName, &bytes, &_paramOverride, taskContext)
+		_paramOverride = &val
 	}
-	return unmarshalTask(taskName, &bytes, nil, taskContext)
+
+	bytes, err := ioutil.ReadFile(taskConfigPath)
+	if os.IsNotExist(err) {
+		return unmarshalTask(taskName, nil, _paramOverride, taskContext)
+	}
+
+	var data map[string]interface{}
+	if err := yaml.Unmarshal(bytes, &data); err != nil {
+		return err
+	}
+	taskType, isExist := data[taskTypeKey]
+	if !isExist {
+		return fmt.Errorf("Entry [%s] does not exist", taskTypeKey)
+	}
+	return unmarshalTask(taskType.(string), &bytes, _paramOverride, taskContext)
 }
 
 func NewTask(routine Routine) (*Task, error) {
