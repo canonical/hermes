@@ -61,13 +61,13 @@ func (instance *TaskMemoryInfoInstance) writeToFile(context *MemoryInfoContext, 
 	return nil
 }
 
+func (instance *TaskMemoryInfoInstance) GetParserType(instContext interface{}) parser.ParserType {
+	return parser.MemoryInfo
+}
+
 func (instance *TaskMemoryInfoInstance) Process(instContext interface{}, outputPath string, result chan TaskResult) {
 	memoryInfoContext := instContext.(*MemoryInfoContext)
-	taskResult := TaskResult{
-		Err:         nil,
-		ParserType:  parser.MemoryInfo,
-		OutputFiles: []string{},
-	}
+	taskResult := TaskResult{}
 	var err error
 	defer func() {
 		taskResult.Err = err

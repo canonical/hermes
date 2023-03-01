@@ -18,13 +18,13 @@ func NewTaskBinaryInstance() (TaskInstance, error) {
 	return &TaskBinaryInstance{}, nil
 }
 
+func (instance *TaskBinaryInstance) GetParserType(instContext interface{}) parser.ParserType {
+	return parser.None
+}
+
 func (instance *TaskBinaryInstance) Process(instContext interface{}, outputPath string, result chan TaskResult) {
 	binaryContext := instContext.(*BinaryContext)
-	taskResult := TaskResult{
-		Err:         nil,
-		ParserType:  parser.None,
-		OutputFiles: []string{},
-	}
+	taskResult := TaskResult{}
 	var err error
 	defer func() {
 		taskResult.Err = err

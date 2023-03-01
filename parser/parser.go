@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -37,26 +36,9 @@ func NewParser(metaPath string, outputDir string) (*Parser, error) {
 	return &parser, nil
 }
 
-func (parser *Parser) getInstance(meta Metadata) (ParserInstance, error) {
-	switch meta.Type {
-	case None:
-		return nil, nil
-	case CpuInfo:
-		return GetCpuInfoParser()
-	case CpuProfile:
-		return GetCpuProfileParser()
-	case MemoryInfo:
-		return GetMemoryInfoParser()
-	case MemoryEbpf:
-		return GetEbpfParser(meta.Type)
-	}
-
-	return nil, fmt.Errorf("Unhandled parser type [%d]", meta.Type)
-}
-
 func (parser *Parser) Parse() error {
 	for _, meta := range parser.logMeta.Metas {
-		instance, err := parser.getInstance(meta)
+		instance, err := GetParser(meta.Type)
 		if err != nil {
 			return err
 		}

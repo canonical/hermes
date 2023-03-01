@@ -67,7 +67,7 @@ func (runner *JobRunner) newJob(job Job) {
 		taskResult := task.Condition(outputPath)
 		if len(taskResult.OutputFiles) > 0 {
 			logMeta.Metas = append(logMeta.Metas, parser.Metadata{
-				Type: taskResult.ParserType,
+				Type: task.GetCondParserType(),
 				Logs: taskResult.OutputFiles,
 			})
 		}
@@ -87,7 +87,7 @@ func (runner *JobRunner) newJob(job Job) {
 				return
 			} else if len(taskResult.OutputFiles) > 0 {
 				logMeta.Metas = append(logMeta.Metas, parser.Metadata{
-					Type: taskResult.ParserType,
+					Type: task.GetTaskParserType(),
 					Logs: taskResult.OutputFiles,
 				})
 			}

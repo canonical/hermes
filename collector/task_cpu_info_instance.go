@@ -45,13 +45,13 @@ func (instance *TaskCpuInfoInstance) writeToFile(context *CpuInfoContext, path s
 	return nil
 }
 
+func (instance *TaskCpuInfoInstance) GetParserType(instContext interface{}) parser.ParserType {
+	return parser.CpuInfo
+}
+
 func (instance *TaskCpuInfoInstance) Process(instContext interface{}, outputPath string, result chan TaskResult) {
 	cpuInfoContext := instContext.(*CpuInfoContext)
-	taskResult := TaskResult{
-		Err:         nil,
-		ParserType:  parser.CpuInfo,
-		OutputFiles: []string{},
-	}
+	taskResult := TaskResult{}
 	var err error
 	defer func() {
 		taskResult.Err = err

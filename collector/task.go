@@ -57,6 +57,7 @@ type TaskResult struct {
 }
 
 type TaskInstance interface {
+	GetParserType(context interface{}) parser.ParserType
 	Process(context interface{}, outputPath string, result chan TaskResult)
 }
 
@@ -170,24 +171,24 @@ func (task *Task) getInstance(taskType TaskType) (TaskInstance, error) {
 func (task *Task) execute(context *TaskContext, outputPath string, result chan TaskResult) {
 	instance, err := task.getInstance(context.Type)
 	if err != nil {
-		result <- TaskResult{
-			Err:         err,
-			ParserType:  parser.None,
-			OutputFiles: []string{},
-		}
+		result <- TaskResult{}
 		return
 	}
 
 	instance.Process(context.Context, outputPath, result)
 }
 
+func (task *Task) getParserType(context *TaskContext) parser.ParserType {
+	instance, err := task.getInstance(context.Type)
+	if err != nil {
+		return parser.None
+	}
+	return instance.GetParserType(context.Context)
+}
+
 func (task *Task) Condition(outputPath string) TaskResult {
 	if task.Cond.Type == None {
-		return TaskResult{
-			Err:         nil,
-			ParserType:  parser.None,
-			OutputFiles: []string{},
-		}
+		return TaskResult{}
 	}
 
 	result := make(chan TaskResult)
@@ -195,16 +196,26 @@ func (task *Task) Condition(outputPath string) TaskResult {
 	return <-result
 }
 
+func (task *Task) GetCondParserType() parser.ParserType {
+	if task.Cond.Type == None {
+		return parser.None
+	}
+	return task.getParserType(&task.Cond)
+}
+
 func (task *Task) Process(outputPath string, result chan TaskResult) {
 	if task.Task.Type == None {
 		go func() {
-			result <- TaskResult{
-				Err:         nil,
-				ParserType:  parser.None,
-				OutputFiles: []string{},
-			}
+			result <- TaskResult{}
 		}()
 		return
 	}
 	go task.execute(&task.Task, outputPath, result)
+}
+
+func (task *Task) GetTaskParserType() parser.ParserType {
+	if task.Task.Type == None {
+		return parser.None
+	}
+	return task.getParserType(&task.Task)
 }

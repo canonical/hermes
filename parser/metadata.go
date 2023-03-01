@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	"os"
 
 	"gopkg.in/yaml.v2"
@@ -15,16 +16,31 @@ const (
 	CpuInfo
 	CpuProfile
 	MemoryInfo
-	MemoryEbpf
+	MemoryAllocEbpf
 )
 
 type Metadata struct {
-	Type ParserType `yaml:"type"`
+	Type ParserType `yaml:"parser_type"`
 	Logs []string   `yaml:"logs"`
 }
 
 type LogMetadata struct {
 	Metas []Metadata `yaml:"meta"`
+}
+
+func GetParser(parserType ParserType) (ParserInstance, error) {
+	parserGetMapping := map[ParserType]func() (ParserInstance, error){
+		CpuInfo:         GetCpuInfoParser,
+		MemoryInfo:      GetMemoryInfoParser,
+		CpuProfile:      GetCpuProfileParser,
+		MemoryAllocEbpf: GetMemoryAllocEbpfParser,
+	}
+
+	getParser, isExist := parserGetMapping[parserType]
+	if !isExist {
+		return nil, fmt.Errorf("Unhandled parser type [%d]", parserType)
+	}
+	return getParser()
 }
 
 func (logMeta *LogMetadata) ToFile(dir string) error {

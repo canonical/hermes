@@ -1,4 +1,4 @@
-package ebpf
+package parser
 
 import (
 	"encoding/json"
@@ -7,6 +7,8 @@ import (
 	"io/ioutil"
 	"os"
 	"strings"
+
+	memoryAlloc "hermes/backend/ebpf/memory_alloc"
 )
 
 type MemoryEbpfParser struct{}
@@ -14,7 +16,7 @@ type MemoryEbpfParser struct{}
 const UnrecordedLabel = "Unrecorded"
 const RecordedLabel = "Recorded"
 
-func GetMemoryEbpfParser() (*MemoryEbpfParser, error) {
+func GetMemoryAllocEbpfParser() (ParserInstance, error) {
 	return &MemoryEbpfParser{}, nil
 }
 
@@ -32,8 +34,8 @@ func (parser *MemoryEbpfParser) getSlabInfo(path string) (*utils.SlabInfo, error
 	return &slabInfo, nil
 }
 
-func (parser *MemoryEbpfParser) getSlabRec(path string) (*map[string]SlabRecord, error) {
-	slabRec := make(map[string]SlabRecord)
+func (parser *MemoryEbpfParser) getSlabRec(path string) (*map[string]memoryAlloc.SlabRecord, error) {
+	slabRec := make(map[string]memoryAlloc.SlabRecord)
 
 	bytes, err := ioutil.ReadFile(path)
 	if err != nil {
@@ -47,7 +49,7 @@ func (parser *MemoryEbpfParser) getSlabRec(path string) (*map[string]SlabRecord,
 }
 
 func (parser *MemoryEbpfParser) getStacks(slabName string,
-	allocRec *AllocRecord, flameGraphData *utils.FlameGraphData) int64 {
+	allocRec *memoryAlloc.AllocRecord, flameGraphData *utils.FlameGraphData) int64 {
 	var bytesObserved int64 = 0
 
 	for _, allocDetail := range allocRec.AllocDetails {
@@ -65,7 +67,7 @@ func (parser *MemoryEbpfParser) getStacks(slabName string,
 }
 
 func (parser *MemoryEbpfParser) parseStacks(slabName string,
-	bytes int64, rec *SlabRecord, flameGraphData *utils.FlameGraphData) {
+	bytes int64, rec *memoryAlloc.SlabRecord, flameGraphData *utils.FlameGraphData) {
 	for _, allocRec := range *rec {
 		bytesObserved := parser.getStacks(slabName, &allocRec, flameGraphData)
 		bytes = bytes - bytesObserved
@@ -77,7 +79,7 @@ func (parser *MemoryEbpfParser) parseStacks(slabName string,
 }
 
 func (parser *MemoryEbpfParser) writeStackCollapsedData(
-	slabInfo *utils.SlabInfo, slabRec *map[string]SlabRecord, path string) error {
+	slabInfo *utils.SlabInfo, slabRec *map[string]memoryAlloc.SlabRecord, path string) error {
 	fp, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
 		return err
@@ -102,13 +104,13 @@ func (parser *MemoryEbpfParser) Parse(logDir string, logs []string, outputDir st
 	}
 
 	var slabInfo *utils.SlabInfo = nil
-	var slabRec *map[string]SlabRecord = nil
+	var slabRec *map[string]memoryAlloc.SlabRecord = nil
 	for _, log := range logs {
 		var err error
 		path := logDir + "/" + log
-		if strings.Contains(log, SlabInfoFilePostfix) {
+		if strings.Contains(log, memoryAlloc.SlabInfoFilePostfix) {
 			slabInfo, err = parser.getSlabInfo(path)
-		} else if strings.Contains(log, SlabRecFilePostfix) {
+		} else if strings.Contains(log, memoryAlloc.SlabRecFilePostfix) {
 			slabRec, err = parser.getSlabRec(path)
 		} else {
 			err = fmt.Errorf("Unexpected log name [%s]", log)

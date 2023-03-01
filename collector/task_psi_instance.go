@@ -59,13 +59,13 @@ func (instance *TaskPSIInstance) ToFile(psiResult *utils.PSIResult, outputPath s
 	return nil
 }
 
+func (instance *TaskPSIInstance) GetParserType(instContext interface{}) parser.ParserType {
+	return parser.None
+}
+
 func (instance *TaskPSIInstance) Process(instContext interface{}, outputPath string, result chan TaskResult) {
 	psiContext := instContext.(*PSIContext)
-	taskResult := TaskResult{
-		Err:         nil,
-		ParserType:  parser.None,
-		OutputFiles: []string{},
-	}
+	taskResult := TaskResult{}
 	var err error
 	defer func() {
 		taskResult.Err = err

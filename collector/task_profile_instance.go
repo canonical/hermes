@@ -36,13 +36,13 @@ func (instance *TaskProfileInstance) profile(ctx context.Context, cpu int, attr 
 	perfEvent.Profile(ctx, outputPath)
 }
 
+func (instance *TaskProfileInstance) GetParserType(instContext interface{}) parser.ParserType {
+	return parser.CpuProfile
+}
+
 func (instance *TaskProfileInstance) Process(instContext interface{}, outputPath string, result chan TaskResult) {
 	profileContext := instContext.(*ProfileContext)
-	taskResult := TaskResult{
-		Err:         nil,
-		ParserType:  parser.CpuProfile,
-		OutputFiles: []string{},
-	}
+	taskResult := TaskResult{}
 	var err error
 	defer func() {
 		taskResult.Err = err

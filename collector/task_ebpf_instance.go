@@ -23,21 +23,18 @@ func NewTaskEbpfInstance() (TaskInstance, error) {
 	return &TaskEbpfInstance{}, nil
 }
 
-func (instance *TaskEbpfInstance) getParserType(ebpfType ebpf.EbpfType) parser.ParserType {
-	switch ebpfType {
+func (instance *TaskEbpfInstance) GetParserType(instContext interface{}) parser.ParserType {
+	ebpfContext := instContext.(*EbpfContext)
+	switch ebpfContext.EbpfType {
 	case ebpf.Memory:
-		return parser.MemoryEbpf
+		return parser.MemoryAllocEbpf
 	}
 	return parser.None
 }
 
 func (instance *TaskEbpfInstance) Process(instContext interface{}, outputPath string, result chan TaskResult) {
 	ebpfContext := instContext.(*EbpfContext)
-	taskResult := TaskResult{
-		Err:         nil,
-		ParserType:  parser.None,
-		OutputFiles: []string{},
-	}
+	taskResult := TaskResult{}
 	var err error
 	defer func() {
 		taskResult.Err = err
@@ -65,6 +62,5 @@ func (instance *TaskEbpfInstance) Process(instContext interface{}, outputPath st
 	}
 	loader.Close()
 
-	taskResult.ParserType = instance.getParserType(ebpfContext.EbpfType)
 	taskResult.OutputFiles = loader.GetOutputFiles()
 }
