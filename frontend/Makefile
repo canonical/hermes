@@ -1,10 +1,11 @@
 .PHONY: all build clean install
 
-RM               := /usr/bin/rm
-NPM              := /usr/bin/npm
-MKDIR            := /usr/bin/mkdir
-CP               := /usr/bin/cp
-PROTOC           := /usr/bin/protoc
+RM               := rm -f
+RMDIR            := rm -rf
+NPM              := npm
+MKDIRP           := mkdir -p
+CPDIR            := cp -r
+PROTOC           := protoc
 SRC_FRONTEND_DIR := ./build/
 DST_FRONTEND_DIR := $(HOME)/frontend/
 
@@ -16,10 +17,10 @@ build:
 	$(NPM) run build
 
 clean:
-	$(RM) -rf ./build
-	$(RM) -f ./*pb.js
-	$(RM) -rf ./node_modules
+	$(RMDIR) ./build
+	$(RM) ./*pb.js
+	$(RMDIR) ./node_modules
 
 install:
-	$(MKDIR) -p $(DST_FRONTEND_DIR)
-	$(CP) -r $(SRC_FRONTEND_DIR)* $(DST_FRONTEND_DIR)
+	$(MKDIRP) $(DST_FRONTEND_DIR)
+	$(CPDIR) $(SRC_FRONTEND_DIR)* $(DST_FRONTEND_DIR)
