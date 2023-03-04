@@ -28,6 +28,9 @@ check:
 	$(GO) vet ./...
 
 auto_install:
+ifeq ($(shell $(DPKG) -s curl 2> /dev/null; $(ECHO) $$?), 1)
+	$(APT) install -y curl
+endif
 ifeq ($(shell $(DPKG) -s llvm 2> /dev/null; $(ECHO) $$?), 1)
 	$(APT) install -y llvm
 endif
@@ -43,7 +46,7 @@ endif
 ifeq ($(shell $(DPKG) -s protobuf-compiler 2> /dev/null; $(ECHO) $$?), 1)
 	$(APT) install -y protobuf-compiler
 endif
-	$(CURL) -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash - &&apt-get install -y nodejs
+	$(CURL) -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash - && apt install -y nodejs
 	$(SNAP) install go --classic
 	$(GO) install google.golang.org/protobuf/cmd/protoc-gen-go
 
