@@ -1,0 +1,4 @@
+#!/bin/sh -e
+
+cp -R $SNAP/config $SNAP_USER_COMMON
+cp -R $SNAP/frontend $SNAP_USER_COMMON
