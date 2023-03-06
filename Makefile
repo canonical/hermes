@@ -52,7 +52,7 @@ endif
 
 generate: export BPF_CLANG := $(CLANG)
 generate: export BPF_CFLAGS := $(CFLAGS)
-generate:
+generate: auto_install
 	$(GO) generate ./backend/ebpf/...
 
 build: auto_install generate
