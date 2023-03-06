@@ -1,26 +1,26 @@
 .PHONY: all check auto_install generate build install install_bin install_ui clean
 
-GO             := go
-RM             := rm -f
-RMDIR          := rm -rf
-MKDIRP         := mkdir -p
-CPDIR          := cp -r
-CLANG          := clang
-MAKE           := make
-SNAP           := snap
-APT            := apt
-DPKG           := dpkg
-ECHO           := echo
-WHICH          := which
-CURL           := curl
-PROTO_DIR      := proto
-FRONTEND_DIR   := frontend
-BUILD_DIR      := ./build/
-SRC_CONFIG_DIR := ./config/
-DST_CONFIG_DIR := $(HOME)/config/
-INSTALL_BIN    := install -m 755
-DST_BIN_DIR    := /usr/sbin/
-CFLAGS         := -O2 -g -Wall -Werror $(CFLAGS)
+GO              := go
+RM              := rm -f
+RMDIR           := rm -rf
+MKDIRP          := mkdir -p
+CPDIR           := cp -r
+CLANG           := clang
+MAKE            := make
+SNAP            := snap
+APT             := apt
+DPKG            := dpkg
+ECHO            := echo
+WHICH           := which
+CURL            := curl
+PROTO_DIR       := proto
+FRONTEND_DIR    := frontend
+INSTALL_DIR     := ./install/
+SRC_CONFIG_DIR  := ./config/
+DST_CONFIG_DIR  := $(if $(DESTDIR),$(DESTDIR),$(HOME))/config/
+INSTALL_BIN     := install -m 755
+DST_BIN_DIR     := /usr/sbin/
+CFLAGS          := -O2 -g -Wall -Werror $(CFLAGS)
 
 all: clean build
 
@@ -57,13 +57,14 @@ generate: auto_install
 
 build: auto_install generate
 	$(MAKE) -C $(PROTO_DIR) build
-	$(GO) build -o $(BUILD_DIR) ./...
+	$(GO) build -o $(INSTALL_DIR) ./...
 	$(MAKE) -C $(FRONTEND_DIR) build
 
 install: install_bin install_ui
 
 install_bin:
-	$(INSTALL_BIN) $(BUILD_DIR)* $(DST_BIN_DIR)
+	$(MKDIRP) $(DESTDIR)$(DST_BIN_DIR)
+	$(INSTALL_BIN) $(INSTALL_DIR)* $(DESTDIR)$(DST_BIN_DIR)
 	$(MKDIRP) $(DST_CONFIG_DIR)
 	$(CPDIR) $(SRC_CONFIG_DIR)* $(DST_CONFIG_DIR)
 
@@ -74,7 +75,7 @@ clean:
 ifneq ($(shell $(WHICH) $(GO)),)
 	$(GO) clean
 endif
-	$(RMDIR) $(BUILD_DIR)
+	$(RMDIR) $(INSTALL_DIR)
 	$(RM) ./backend/ebpf/*/bpf_bpfeb*.go
 	$(RM) ./backend/ebpf/*/bpf_bpfeb*.o
 	$(RM) ./backend/ebpf/*/bpf_bpfel*.go

@@ -1,6 +1,8 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	"net/http"
 	"os"
 
@@ -10,18 +12,36 @@ import (
 
 var contentParser *ContentParser
 
-func main() {
-	router := gin.Default()
+var (
+	frontendDir string
+	viewDir     string
+)
+
+func init() {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		logrus.Fatal(err)
 	}
 
-	viewDir := homeDir + string("/view")
+	flag.StringVar(&frontendDir, "frontend_dir", homeDir+string("/frontend"), "The path of frontend directory")
+	flag.StringVar(&viewDir, "view_dir", homeDir+string("/view"), "The path of view directory")
+	flag.Usage = usage
+}
+
+func usage() {
+	fmt.Println("Usage: webserver [frontend_dir] [view_dir]")
+	flag.PrintDefaults()
+}
+
+func main() {
+	router := gin.Default()
+
+	flag.Parse()
+
 	contentParser = NewContentParser(viewDir)
-	router.LoadHTMLGlob(homeDir + string("/frontend/*.html"))
-	router.Static("/assets", homeDir+string("/frontend/assets"))
-	router.Static("/css", homeDir+string("/frontend/css"))
+	router.LoadHTMLGlob(frontendDir + string("/*.html"))
+	router.Static("/assets", frontendDir+string("/assets"))
+	router.Static("/css", frontendDir+string("/css"))
 	router.Static("/view", viewDir)
 
 	page := router.Group("/")

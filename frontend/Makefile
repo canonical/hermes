@@ -7,7 +7,7 @@ MKDIRP           := mkdir -p
 CPDIR            := cp -r
 PROTOC           := protoc
 SRC_FRONTEND_DIR := ./build/
-DST_FRONTEND_DIR := $(HOME)/frontend/
+DST_FRONTEND_DIR := $(if $(DESTDIR),$(DESTDIR),$(HOME))/frontend/
 
 all: clean build
 
