@@ -44,7 +44,7 @@ func main() {
 		logrus.Fatal(err)
 	}
 
-	jobQueue.Run(ctx, outputDir)
+	jobQueue.Run(ctx, configDir, outputDir)
 
 	configWatcher.Run(ctx, configDir)
 	defer configWatcher.Release()

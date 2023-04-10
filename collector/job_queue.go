@@ -187,8 +187,8 @@ func (jobQueue *JobQueue) run(ctx context.Context) {
 	}
 }
 
-func (jobQueue *JobQueue) Run(ctx context.Context, outputDir string) {
+func (jobQueue *JobQueue) Run(ctx context.Context, configDir, outputDir string) {
 	jobQueue.ticker.Run(ctx)
-	jobQueue.runner.Run(ctx, outputDir)
+	jobQueue.runner.Run(ctx, configDir, outputDir)
 	go jobQueue.run(ctx)
 }

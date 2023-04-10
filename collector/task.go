@@ -2,11 +2,11 @@ package collector
 
 import (
 	"fmt"
+	"hermes/parser"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"reflect"
-
-	"hermes/parser"
 
 	"gopkg.in/yaml.v2"
 )
@@ -43,7 +43,7 @@ func parseTaskType(val string) TaskType {
 	return taskType
 }
 
-const taskConfigDir = "/root/config/tasks/"
+const tasksDir = "tasks"
 
 type TaskContext struct {
 	Type    TaskType
@@ -100,9 +100,9 @@ func unmarshalTask(taskType string, param, paramOverride *[]byte, taskContext *T
 	return nil
 }
 
-func loadTask(taskName string, paramOverride interface{}, taskContext *TaskContext) error {
+func loadTask(configDir, taskName string, paramOverride interface{}, taskContext *TaskContext) error {
 	var _paramOverride *[]byte = nil
-	taskConfigPath := string(taskConfigDir) + taskName + string(".yaml")
+	taskConfigPath := filepath.Join(configDir, tasksDir, taskName+string(".yaml"))
 
 	if paramOverride != nil {
 		val, err := yaml.Marshal(paramOverride)
@@ -128,18 +128,18 @@ func loadTask(taskName string, paramOverride interface{}, taskContext *TaskConte
 	return unmarshalTask(taskType.(string), &bytes, _paramOverride, taskContext)
 }
 
-func NewTask(routine Routine) (*Task, error) {
+func NewTask(configDir string, routine Routine) (*Task, error) {
 	var task Task
 	if len(routine.Cond) == 1 {
 		taskName := reflect.ValueOf(routine.Cond).MapKeys()[0].Interface().(string)
-		if err := loadTask(taskName, routine.Cond[taskName], &task.Cond); err != nil {
+		if err := loadTask(configDir, taskName, routine.Cond[taskName], &task.Cond); err != nil {
 			return nil, err
 		}
 	}
 
 	if len(routine.Task) == 1 {
 		taskName := reflect.ValueOf(routine.Task).MapKeys()[0].Interface().(string)
-		if err := loadTask(taskName, routine.Task[taskName], &task.Task); err != nil {
+		if err := loadTask(configDir, taskName, routine.Task[taskName], &task.Task); err != nil {
 			return nil, err
 		}
 	}

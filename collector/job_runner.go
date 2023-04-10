@@ -14,6 +14,7 @@ import (
 )
 
 type JobRunner struct {
+	configDir     string
 	outputDir     string
 	quit          chan bool
 	jobsInProcess sync.Map
@@ -58,7 +59,7 @@ func (runner *JobRunner) newJob(job Job) {
 			return
 		}
 
-		task, err := NewTask(routine)
+		task, err := NewTask(runner.configDir, routine)
 		if err != nil {
 			logrus.Errorf(err.Error())
 			return
@@ -118,7 +119,8 @@ func (runner *JobRunner) run(ctx context.Context) {
 	}
 }
 
-func (runner *JobRunner) Run(ctx context.Context, outputDir string) {
+func (runner *JobRunner) Run(ctx context.Context, configDir, outputDir string) {
+	runner.configDir = configDir
 	runner.outputDir = outputDir
 	go runner.run(ctx)
 }
