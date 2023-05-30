@@ -3,15 +3,14 @@ package collector
 import (
 	"encoding/json"
 	"fmt"
-	"hermes/backend/utils"
-	"hermes/parser"
 	"os"
-	"path/filepath"
+
+	"hermes/backend/utils"
+	"hermes/common"
+	"hermes/log"
 
 	"github.com/sirupsen/logrus"
 )
-
-const CpuInfoTask = "cpu_info"
 
 type CpuInfoContext struct {
 	Threshold uint64
@@ -20,7 +19,7 @@ type CpuInfoContext struct {
 
 type TaskCpuInfoInstance struct{}
 
-func NewCpuInfoInstance() (TaskInstance, error) {
+func NewCpuInfoInstance(_ common.TaskType) (TaskInstance, error) {
 	return &TaskCpuInfoInstance{}, nil
 }
 
@@ -45,17 +44,15 @@ func (instance *TaskCpuInfoInstance) writeToFile(context *CpuInfoContext, path s
 	return nil
 }
 
-func (instance *TaskCpuInfoInstance) GetParserType(instContext interface{}) parser.ParserType {
-	return parser.CpuInfo
+func (instance *TaskCpuInfoInstance) GetLogDataPathPostfix() string {
+	return ".cpuinfo"
 }
 
-func (instance *TaskCpuInfoInstance) Process(instContext interface{}, outputPath string, result chan TaskResult) {
+func (instance *TaskCpuInfoInstance) Process(instContext interface{}, logDataPathGenerator log.LogDataPathGenerator, result chan error) {
 	cpuInfoContext := instContext.(*CpuInfoContext)
-	taskResult := TaskResult{}
 	var err error
 	defer func() {
-		taskResult.Err = err
-		result <- taskResult
+		result <- err
 	}()
 
 	cpuInfoContext.Usage, err = utils.GetCpuUsage()
@@ -69,9 +66,8 @@ func (instance *TaskCpuInfoInstance) Process(instContext interface{}, outputPath
 		err = fmt.Errorf("CpuInfo value does not exceed threshold")
 	}
 
-	cpuCondFile := outputPath + ".cond"
-	if err := instance.writeToFile(cpuInfoContext, cpuCondFile); err != nil {
-		logrus.Errorf("Failed to write to file [%s], err [%s]", cpuCondFile, err)
+	logDataPath := logDataPathGenerator(".cpuinfo")
+	if instance.writeToFile(cpuInfoContext, logDataPath) != nil {
+		logrus.Errorf("Failed to write to file [%s], err [%s]", logDataPath, err)
 	}
-	taskResult.OutputFiles = append(taskResult.OutputFiles, filepath.Base(cpuCondFile))
 }

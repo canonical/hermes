@@ -16,8 +16,9 @@ CURL            := curl
 PROTO_DIR       := proto
 FRONTEND_DIR    := frontend
 INSTALL_DIR     := ./install/
+METADATA_DIR    := $(if $(DESTDIR),$(DESTDIR),$(HOME))/hermes/
 SRC_CONFIG_DIR  := ./config/
-DST_CONFIG_DIR  := $(if $(DESTDIR),$(DESTDIR),$(HOME))/config/
+DST_CONFIG_DIR  := $(METADATA_DIR)/config/
 INSTALL_BIN     := install -m 755
 DST_BIN_DIR     := /usr/sbin/
 CFLAGS          := -O2 -g -Wall -Werror $(CFLAGS)
@@ -57,7 +58,7 @@ generate: auto_install
 
 build: auto_install generate
 	$(MAKE) -C $(PROTO_DIR) build
-	$(GO) build -o $(INSTALL_DIR) ./...
+	$(GO) build -ldflags "-X main.metadataDir=$(METADATA_DIR)" -o $(INSTALL_DIR) ./...
 	$(MAKE) -C $(FRONTEND_DIR) build
 
 install: install_bin install_ui

@@ -3,15 +3,15 @@ package collector
 import (
 	"encoding/json"
 	"fmt"
-	"hermes/backend/utils"
-	"hermes/parser"
 	"os"
-	"path/filepath"
+
+	"hermes/backend/utils"
+	"hermes/common"
+	"hermes/log"
 
 	"github.com/sirupsen/logrus"
 )
 
-const MemoryInfoTask = "memory_info"
 const MemTotal = "MemTotal"
 
 type MemoryInfoContext struct {
@@ -21,7 +21,7 @@ type MemoryInfoContext struct {
 
 type TaskMemoryInfoInstance struct{}
 
-func NewMemoryInfoInstance() (TaskInstance, error) {
+func NewMemoryInfoInstance(_ common.TaskType) (TaskInstance, error) {
 	return &TaskMemoryInfoInstance{}, nil
 }
 
@@ -61,17 +61,15 @@ func (instance *TaskMemoryInfoInstance) writeToFile(context *MemoryInfoContext, 
 	return nil
 }
 
-func (instance *TaskMemoryInfoInstance) GetParserType(instContext interface{}) parser.ParserType {
-	return parser.MemoryInfo
+func (instance *TaskMemoryInfoInstance) GetLogDataPathPostfix() string {
+	return ".meminfo"
 }
 
-func (instance *TaskMemoryInfoInstance) Process(instContext interface{}, outputPath string, result chan TaskResult) {
+func (instance *TaskMemoryInfoInstance) Process(instContext interface{}, logDataPathGenerator log.LogDataPathGenerator, result chan error) {
 	memoryInfoContext := instContext.(*MemoryInfoContext)
-	taskResult := TaskResult{}
 	var err error
 	defer func() {
-		taskResult.Err = err
-		result <- taskResult
+		result <- err
 	}()
 
 	memoryInfoContext.MemInfo, err = utils.GetMemInfo()
@@ -86,9 +84,8 @@ func (instance *TaskMemoryInfoInstance) Process(instContext interface{}, outputP
 		err = fmt.Errorf("MemInfo value does not exceed thresholds")
 	}
 
-	memCondFile := outputPath + ".cond"
-	if err := instance.writeToFile(memoryInfoContext, memCondFile); err != nil {
-		logrus.Errorf("Failed to write to file [%s], err [%s]", memCondFile, err)
+	logDataPath := logDataPathGenerator(".meminfo")
+	if err := instance.writeToFile(memoryInfoContext, logDataPath); err != nil {
+		logrus.Errorf("Failed to write to file [%s], err [%s]", logDataPath, err)
 	}
-	taskResult.OutputFiles = append(taskResult.OutputFiles, filepath.Base(memCondFile))
 }

@@ -3,10 +3,9 @@ package collector
 import (
 	"os"
 
-	"hermes/parser"
+	"hermes/common"
+	"hermes/log"
 )
-
-const BinaryTask = "binary"
 
 type BinaryContext struct {
 	Cmds []string
@@ -14,28 +13,27 @@ type BinaryContext struct {
 
 type TaskBinaryInstance struct{}
 
-func NewTaskBinaryInstance() (TaskInstance, error) {
+func NewTaskBinaryInstance(_ common.TaskType) (TaskInstance, error) {
 	return &TaskBinaryInstance{}, nil
 }
 
-func (instance *TaskBinaryInstance) GetParserType(instContext interface{}) parser.ParserType {
-	return parser.None
+func (instance *TaskBinaryInstance) GetLogDataPathPostfix() string {
+	return ".binary"
 }
 
-func (instance *TaskBinaryInstance) Process(instContext interface{}, outputPath string, result chan TaskResult) {
+func (instance *TaskBinaryInstance) Process(instContext interface{}, logDataPathGenerator log.LogDataPathGenerator, result chan error) {
 	binaryContext := instContext.(*BinaryContext)
-	taskResult := TaskResult{}
 	var err error
 	defer func() {
-		taskResult.Err = err
-		result <- taskResult
+		result <- err
 	}()
 
+	logDataPath := logDataPathGenerator(".binary")
 	env := map[string]string{
-		"OUTPUT_FILE": outputPath,
+		"OUTPUT_FILE": logDataPath,
 	}
 	cmd := PrepareCmd(binaryContext.Cmds, env)
-	outfile, err := os.Create(outputPath)
+	outfile, err := os.Create(logDataPath)
 	if err != nil {
 		return
 	}

@@ -5,40 +5,39 @@ import (
 	"time"
 
 	"hermes/backend/ebpf"
-	"hermes/parser"
+	"hermes/common"
+	"hermes/log"
 
 	"github.com/cilium/ebpf/rlimit"
 )
 
-const EbpfTask = "ebpf"
-
 type EbpfContext struct {
-	Timeout  uint32
-	EbpfType ebpf.EbpfType
+	Timeout uint32
 }
 
-type TaskEbpfInstance struct{}
-
-func NewTaskEbpfInstance() (TaskInstance, error) {
-	return &TaskEbpfInstance{}, nil
+type TaskEbpfInstance struct {
+	taskType common.TaskType
 }
 
-func (instance *TaskEbpfInstance) GetParserType(instContext interface{}) parser.ParserType {
-	ebpfContext := instContext.(*EbpfContext)
-	switch ebpfContext.EbpfType {
-	case ebpf.Memory:
-		return parser.MemoryAllocEbpf
+func NewTaskEbpfInstance(taskType common.TaskType) (TaskInstance, error) {
+	return &TaskEbpfInstance{
+		taskType: taskType,
+	}, nil
+}
+
+func (instance *TaskEbpfInstance) GetLogDataPathPostfix() string {
+	loader, err := ebpf.GetLoader(instance.taskType)
+	if err != nil {
+		return ""
 	}
-	return parser.None
+	return loader.GetLogDataPathPostfix()
 }
 
-func (instance *TaskEbpfInstance) Process(instContext interface{}, outputPath string, result chan TaskResult) {
+func (instance *TaskEbpfInstance) Process(instContext interface{}, logDataPathGenerator log.LogDataPathGenerator, result chan error) {
 	ebpfContext := instContext.(*EbpfContext)
-	taskResult := TaskResult{}
 	var err error
 	defer func() {
-		taskResult.Err = err
-		result <- taskResult
+		result <- err
 	}()
 
 	// Allow the current process to lock memory for eBPF resources.
@@ -46,7 +45,7 @@ func (instance *TaskEbpfInstance) Process(instContext interface{}, outputPath st
 		return
 	}
 
-	loader, err := ebpf.GetLoader(ebpfContext.EbpfType)
+	loader, err := ebpf.GetLoader(instance.taskType)
 	if err != nil {
 		return
 	}
@@ -57,10 +56,8 @@ func (instance *TaskEbpfInstance) Process(instContext interface{}, outputPath st
 	if err := loader.Load(ctx); err != nil {
 		return
 	}
-	if err := loader.StoreData(outputPath); err != nil {
+	if err := loader.StoreData(logDataPathGenerator); err != nil {
 		return
 	}
 	loader.Close()
-
-	taskResult.OutputFiles = loader.GetOutputFiles()
 }

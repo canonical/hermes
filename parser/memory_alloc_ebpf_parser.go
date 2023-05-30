@@ -3,12 +3,15 @@ package parser
 import (
 	"encoding/json"
 	"fmt"
-	"hermes/backend/utils"
 	"io/ioutil"
 	"os"
+	"path/filepath"
+	"strconv"
 	"strings"
 
 	memoryAlloc "hermes/backend/ebpf/memory_alloc"
+	"hermes/backend/utils"
+	"hermes/log"
 )
 
 type MemoryEbpfParser struct{}
@@ -98,22 +101,22 @@ func (parser *MemoryEbpfParser) writeStackCollapsedData(
 	return flameGraphData.WriteToFile(path)
 }
 
-func (parser *MemoryEbpfParser) Parse(logDir string, logs []string, outputDir string) error {
-	if len(logs) != 2 {
-		return fmt.Errorf("Unexpected number of logs, count [%d]", len(logs))
+func (parser *MemoryEbpfParser) Parse(logDataPathGenerator log.LogDataPathGenerator, timestamp int64, logDataPostfix, outputDir string) error {
+	matches, err := filepath.Glob(logDataPathGenerator(logDataPostfix))
+	if err != nil {
+		return err
 	}
 
 	var slabInfo *utils.SlabInfo = nil
 	var slabRec *map[string]memoryAlloc.SlabRecord = nil
-	for _, log := range logs {
+	for _, filePath := range matches {
 		var err error
-		path := logDir + "/" + log
-		if strings.Contains(log, memoryAlloc.SlabInfoFilePostfix) {
-			slabInfo, err = parser.getSlabInfo(path)
-		} else if strings.Contains(log, memoryAlloc.SlabRecFilePostfix) {
-			slabRec, err = parser.getSlabRec(path)
+		if strings.Contains(filePath, memoryAlloc.SlabInfoFilePostfix) {
+			slabInfo, err = parser.getSlabInfo(filePath)
+		} else if strings.Contains(filePath, memoryAlloc.SlabRecFilePostfix) {
+			slabRec, err = parser.getSlabRec(filePath)
 		} else {
-			err = fmt.Errorf("Unexpected log name [%s]", log)
+			err = fmt.Errorf("Unexpected file path [%s]", filePath)
 		}
 
 		if err != nil {
@@ -121,9 +124,9 @@ func (parser *MemoryEbpfParser) Parse(logDir string, logs []string, outputDir st
 		}
 	}
 
-	outputPath := outputDir + "/slab.stack.json"
-	if err := parser.writeStackCollapsedData(slabInfo, slabRec, outputPath); err != nil {
+	outputPath := filepath.Join(outputDir, strconv.FormatInt(timestamp, 10), "slab.stack.json")
+	if err := os.MkdirAll(filepath.Dir(outputPath), os.ModePerm); err != nil {
 		return err
 	}
-	return nil
+	return parser.writeStackCollapsedData(slabInfo, slabRec, outputPath)
 }

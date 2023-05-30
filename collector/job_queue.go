@@ -80,13 +80,13 @@ type JobQueue struct {
 	runner    *JobRunner
 }
 
-func NewJobQueue() (*JobQueue, error) {
+func NewJobQueue(configDir, logDir, storEngine string) (*JobQueue, error) {
 	ticker, err := NewJobTicker()
 	if err != nil {
 		return nil, err
 	}
 
-	runner, err := NewJobRunner()
+	runner, err := NewJobRunner(configDir, logDir, storEngine)
 	if err != nil {
 		return nil, err
 	}
@@ -187,8 +187,8 @@ func (jobQueue *JobQueue) run(ctx context.Context) {
 	}
 }
 
-func (jobQueue *JobQueue) Run(ctx context.Context, configDir, outputDir string) {
+func (jobQueue *JobQueue) Run(ctx context.Context) {
 	jobQueue.ticker.Run(ctx)
-	jobQueue.runner.Run(ctx, configDir, outputDir)
+	jobQueue.runner.Run(ctx)
 	go jobQueue.run(ctx)
 }

@@ -4,10 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"os"
-	"path/filepath"
 
 	"hermes/backend/symbol"
 	"hermes/backend/utils"
+	"hermes/log"
 
 	"github.com/cilium/ebpf"
 	"github.com/cilium/ebpf/link"
@@ -20,9 +20,8 @@ const SlabInfoFilePostfix = ".slab.info"
 const SlabRecFilePostfix = ".slab.rec"
 
 type MemoryLoader struct {
-	objs        *bpfObjects
-	symbolizer  *symbol.Symbolizer
-	outputFiles []string
+	objs       *bpfObjects
+	symbolizer *symbol.Symbolizer
 }
 
 func GetLoader() (*MemoryLoader, error) {
@@ -37,10 +36,13 @@ func GetLoader() (*MemoryLoader, error) {
 	}
 
 	return &MemoryLoader{
-		objs:        &objs,
-		symbolizer:  symbolizer,
-		outputFiles: []string{},
+		objs:       &objs,
+		symbolizer: symbolizer,
 	}, nil
+}
+
+func (loader *MemoryLoader) GetLogDataPathPostfix() string {
+	return ".slab.*"
 }
 
 func (loader *MemoryLoader) Load(ctx context.Context) error {
@@ -200,33 +202,25 @@ func (loader *MemoryLoader) writeSlabRec(outputPath string, recs *map[string]Sla
 	return loader.writeToFile(outputPath, &bytes)
 }
 
-func (loader *MemoryLoader) StoreData(outputPath string) error {
-	slabInfoFile := outputPath + SlabInfoFilePostfix
+func (loader *MemoryLoader) StoreData(logDataPathGenerator log.LogDataPathGenerator) error {
 	slabInfo, err := utils.GetSlabInfo()
 	if err != nil {
 		logrus.Errorf("Failed to get slab info, err [%s]", err)
 		return err
 	}
-	if err := loader.writeSlabInfo(slabInfoFile, slabInfo); err != nil {
+	if err := loader.writeSlabInfo(logDataPathGenerator(SlabInfoFilePostfix), slabInfo); err != nil {
 		logrus.Errorf("Failed to write slab info to file, err [%s]", err)
 		return err
 	}
-	loader.outputFiles = append(loader.outputFiles, filepath.Base(slabInfoFile))
 
-	slabRecFile := outputPath + SlabRecFilePostfix
 	slabRecs := map[string]SlabRecord{}
 	loader.getSlabRec(loader.objs.SlabInfo, &slabRecs)
-	if err := loader.writeSlabRec(slabRecFile, &slabRecs); err != nil {
+	if err := loader.writeSlabRec(logDataPathGenerator(SlabRecFilePostfix), &slabRecs); err != nil {
 		logrus.Errorf("Failed to write slab records to file, err [%s]", err)
 		return err
 	}
-	loader.outputFiles = append(loader.outputFiles, filepath.Base(slabRecFile))
 
 	return nil
-}
-
-func (loader *MemoryLoader) GetOutputFiles() []string {
-	return loader.outputFiles
 }
 
 func (loader *MemoryLoader) Close() {

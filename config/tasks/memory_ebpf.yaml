@@ -1,3 +1,2 @@
-task_type: ebpf
+task_type: memory_ebpf
 timeout: 5
-ebpf_type: 0

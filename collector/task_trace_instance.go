@@ -4,10 +4,9 @@ import (
 	"time"
 
 	"hermes/backend/ftrace"
-	"hermes/parser"
+	"hermes/common"
+	"hermes/log"
 )
-
-const TraceTask = "trace"
 
 type TraceContext struct {
 	Timeout         uint32
@@ -21,7 +20,7 @@ type TaskTraceInstance struct {
 	ftrace *ftrace.Ftrace
 }
 
-func NewTaskTraceInstance() (TaskInstance, error) {
+func NewTaskTraceInstance(_ common.TaskType) (TaskInstance, error) {
 	ftrace, err := ftrace.NewFtrace()
 	if err != nil {
 		return nil, err
@@ -31,17 +30,15 @@ func NewTaskTraceInstance() (TaskInstance, error) {
 		ftrace: ftrace}, nil
 }
 
-func (instance *TaskTraceInstance) GetParserType(instContext interface{}) parser.ParserType {
-	return parser.None
+func (instance *TaskTraceInstance) GetLogDataPathPostfix() string {
+	return ".trace"
 }
 
-func (instance *TaskTraceInstance) Process(instContext interface{}, outputPath string, result chan TaskResult) {
+func (instance *TaskTraceInstance) Process(instContext interface{}, logDataPathGenerator log.LogDataPathGenerator, result chan error) {
 	traceContext := instContext.(*TraceContext)
-	taskResult := TaskResult{}
 	var err error
 	defer func() {
-		taskResult.Err = err
-		result <- taskResult
+		result <- err
 	}()
 
 	err = instance.ftrace.Enable(traceContext.CurrentTracer,
@@ -54,7 +51,7 @@ func (instance *TaskTraceInstance) Process(instContext interface{}, outputPath s
 	timeout := make(chan bool)
 	ack := make(chan error)
 
-	go instance.ftrace.Trace(outputPath, timeout, ack)
+	go instance.ftrace.Trace(logDataPathGenerator(".trace"), timeout, ack)
 
 	timer := time.NewTimer(time.Duration(traceContext.Timeout) * time.Second)
 	defer timer.Stop()

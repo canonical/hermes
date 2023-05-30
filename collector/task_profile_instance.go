@@ -2,19 +2,17 @@ package collector
 
 import (
 	"context"
-	"path/filepath"
 	"strconv"
 	"sync"
 	"time"
 
 	"hermes/backend/perf"
 	"hermes/backend/utils"
-	"hermes/parser"
+	"hermes/common"
+	"hermes/log"
 
 	"github.com/sirupsen/logrus"
 )
-
-const ProfileTask = "profile"
 
 type ProfileContext struct {
 	Timeout uint32
@@ -22,31 +20,29 @@ type ProfileContext struct {
 
 type TaskProfileInstance struct{}
 
-func NewTaskProfileInstance() (TaskInstance, error) {
+func NewTaskProfileInstance(_ common.TaskType) (TaskInstance, error) {
 	return &TaskProfileInstance{}, nil
 }
 
-func (instance *TaskProfileInstance) profile(ctx context.Context, cpu int, attr *perf.Attr, outputPath string) {
+func (instance *TaskProfileInstance) GetLogDataPathPostfix() string {
+	return ".cpu_*"
+}
+
+func (instance *TaskProfileInstance) profile(ctx context.Context, cpu int, attr *perf.Attr, logDataPath string) {
 	perfEvent, err := perf.NewPerfEvent(attr, perf.AllThreads, cpu)
 	if err != nil {
 		logrus.Error(err)
 		return
 	}
 
-	perfEvent.Profile(ctx, outputPath)
+	perfEvent.Profile(ctx, logDataPath)
 }
 
-func (instance *TaskProfileInstance) GetParserType(instContext interface{}) parser.ParserType {
-	return parser.CpuProfile
-}
-
-func (instance *TaskProfileInstance) Process(instContext interface{}, outputPath string, result chan TaskResult) {
+func (instance *TaskProfileInstance) Process(instContext interface{}, logDataPathGenerator log.LogDataPathGenerator, result chan error) {
 	profileContext := instContext.(*ProfileContext)
-	taskResult := TaskResult{}
 	var err error
 	defer func() {
-		taskResult.Err = err
-		result <- taskResult
+		result <- err
 	}()
 
 	attr := perf.Attr{
@@ -64,12 +60,11 @@ func (instance *TaskProfileInstance) Process(instContext interface{}, outputPath
 	defer cancel()
 	for cpu := 0; cpu < utils.GetCpuNum(); cpu++ {
 		waitGroup.Add(1)
-		path := outputPath + string(".") + strconv.Itoa(cpu)
-		taskResult.OutputFiles = append(taskResult.OutputFiles, filepath.Base(path))
+		logDataPath := logDataPathGenerator(".cpu_" + strconv.Itoa(cpu))
 		go func(cpu int, path string) {
 			defer waitGroup.Done()
 			instance.profile(ctx, cpu, &attr, path)
-		}(cpu, path)
+		}(cpu, logDataPath)
 	}
 
 	waitGroup.Wait()

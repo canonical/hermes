@@ -6,12 +6,11 @@ import (
 	"os"
 
 	"hermes/backend/utils"
-	"hermes/parser"
+	"hermes/common"
+	"hermes/log"
 
 	"github.com/sirupsen/logrus"
 )
-
-const PSITask = "psi"
 
 type PSIContext struct {
 	Type utils.PSIType
@@ -21,7 +20,7 @@ type PSIContext struct {
 
 type TaskPSIInstance struct{}
 
-func NewTaskPSIInstance() (TaskInstance, error) {
+func NewTaskPSIInstance(_ common.TaskType) (TaskInstance, error) {
 	return &TaskPSIInstance{}, nil
 }
 
@@ -42,12 +41,12 @@ func (instance *TaskPSIInstance) isBeyondExpectation(psiAvgs *utils.PSIAvgs, exp
 	return false
 }
 
-func (instance *TaskPSIInstance) ToFile(psiResult *utils.PSIResult, outputPath string) error {
+func (instance *TaskPSIInstance) ToFile(psiResult *utils.PSIResult, logDataPath string) error {
 	bytes, err := json.Marshal(psiResult)
 	if err != nil {
 		return err
 	}
-	fp, err := os.OpenFile(outputPath, os.O_WRONLY|os.O_CREATE, 0644)
+	fp, err := os.OpenFile(logDataPath, os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
 		return err
 	}
@@ -59,17 +58,15 @@ func (instance *TaskPSIInstance) ToFile(psiResult *utils.PSIResult, outputPath s
 	return nil
 }
 
-func (instance *TaskPSIInstance) GetParserType(instContext interface{}) parser.ParserType {
-	return parser.None
+func (instance *TaskPSIInstance) GetLogDataPathPostfix() string {
+	return ".psi"
 }
 
-func (instance *TaskPSIInstance) Process(instContext interface{}, outputPath string, result chan TaskResult) {
+func (instance *TaskPSIInstance) Process(instContext interface{}, logDataPathGenerator log.LogDataPathGenerator, result chan error) {
 	psiContext := instContext.(*PSIContext)
-	taskResult := TaskResult{}
 	var err error
 	defer func() {
-		taskResult.Err = err
-		result <- taskResult
+		result <- err
 	}()
 
 	var psi utils.PSI
@@ -77,7 +74,8 @@ func (instance *TaskPSIInstance) Process(instContext interface{}, outputPath str
 	if err != nil {
 		return
 	}
-	err = instance.ToFile(psiResult, outputPath+string(".psi"))
+
+	err = instance.ToFile(psiResult, logDataPathGenerator(".psi"))
 	if err != nil {
 		logrus.Errorf("Failed to write PSI result, err [%s]", err)
 		return

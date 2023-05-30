@@ -4,11 +4,12 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
-	"hermes/backend/utils"
 	"io/ioutil"
 	"os"
-	"path/filepath"
 	"strconv"
+
+	"hermes/backend/utils"
+	"hermes/log"
 )
 
 const MemTotal = "MemTotal"
@@ -38,7 +39,7 @@ func (parser *MemoryInfoParser) getMemoryInfoRecord(path string) (*MemoryInfoRec
 	return &rec, nil
 }
 
-func (parser *MemoryInfoParser) getCSVData(timestamp string, rec *MemoryInfoRecord) ([]string, error) {
+func (parser *MemoryInfoParser) getCSVData(timestamp int64, rec *MemoryInfoRecord) ([]string, error) {
 	memTotal, isExist := (*rec.MemInfo)[MemTotal]
 	if !isExist {
 		return []string{}, fmt.Errorf("Entry [MemTotal] does not exist")
@@ -54,7 +55,7 @@ func (parser *MemoryInfoParser) getCSVData(timestamp string, rec *MemoryInfoReco
 		return []string{}, fmt.Errorf("Threshold [MemFree] does not exist")
 	}
 
-	return []string{timestamp, strconv.FormatInt(memTotal*percent/100, 10), strconv.FormatInt(memFree, 10)}, nil
+	return []string{strconv.FormatInt(timestamp, 10), strconv.FormatInt(memTotal*percent/100, 10), strconv.FormatInt(memFree, 10)}, nil
 }
 
 func (parser *MemoryInfoParser) writeCSVData(csvData []string, path string) error {
@@ -82,22 +83,18 @@ func (parser *MemoryInfoParser) writeCSVData(csvData []string, path string) erro
 	return nil
 }
 
-func (parser *MemoryInfoParser) Parse(logDir string, logs []string, outputDir string) error {
-	if len(logs) != 1 {
-		return fmt.Errorf("Some logs may not be handled")
-	}
-
-	rec, err := parser.getMemoryInfoRecord(logDir + "/" + logs[0])
+func (parser *MemoryInfoParser) Parse(logDataPathGenerator log.LogDataPathGenerator, timestamp int64, logDataPostfix, outputDir string) error {
+	rec, err := parser.getMemoryInfoRecord(logDataPathGenerator(logDataPostfix))
 	if err != nil {
 		return err
 	}
 
-	csvData, err := parser.getCSVData(filepath.Base(outputDir), rec)
+	csvData, err := parser.getCSVData(timestamp, rec)
 	if err != nil {
 		return err
 	}
 
-	err = parser.writeCSVData(csvData, filepath.Dir(outputDir)+string("/overview"))
+	err = parser.writeCSVData(csvData, outputDir+string("/overview"))
 	if err != nil {
 		return err
 	}

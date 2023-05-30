@@ -4,16 +4,19 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"path/filepath"
 
+	"hermes/common"
 	"hermes/parser"
+	"hermes/storage"
 
 	"github.com/sirupsen/logrus"
 )
 
 var (
-	logDir    string
-	outputDir string
+	metadataDir string
+	logDir      string
+	outputDir   string
+	storEngine  string
 )
 
 func init() {
@@ -24,10 +27,11 @@ func init() {
 
 	flag.StringVar(&logDir, "log_dir", "/var/log/collector", "The path of log directory")
 	flag.StringVar(&outputDir, "output_dir", homeDir+string("/view"), "The path of view directory")
-	flag.Usage = usage
+	flag.StringVar(&storEngine, "storage_engine", "file", "The storage engine")
+	flag.Usage = Usage
 }
 
-func usage() {
+func Usage() {
 	fmt.Println("Usage: parser [log_dir] [output_dir]")
 	flag.PrintDefaults()
 }
@@ -35,20 +39,30 @@ func usage() {
 func main() {
 	flag.Parse()
 
-	matches, err := filepath.Glob(logDir + string("/*/*/") + parser.MetadataFilename)
+	err := common.LoadEnv(metadataDir)
 	if err != nil {
 		logrus.Fatal(err)
 	}
 
-	for _, file := range matches {
-		parser, err := parser.NewParser(file, outputDir)
+	storEngineInst, err := storage.GetStorEngine(storEngine, logDir)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+
+	logMetas, err := storEngineInst.Load()
+	if err != nil {
+		logrus.Fatal(err)
+	}
+
+	for timestamp, logMeta := range logMetas {
+		parser, err := parser.NewParser(logDir, outputDir, timestamp, logMeta)
 		if err != nil {
-			logrus.Errorf("Failed to generate parser for metadata [%s], err [%s]", file, err)
+			logrus.Errorf("Failed to generate parser for timestamp [%d], err [%s]", timestamp, err)
 			continue
 		}
 
 		if err := parser.Parse(); err != nil {
-			logrus.Errorf("Failed to parse metadata [%s], err [%s]", file, err)
+			logrus.Errorf("Failed to parse timestamp [%d], err [%s]", timestamp, err)
 		}
 	}
 }

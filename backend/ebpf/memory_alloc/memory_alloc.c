@@ -57,10 +57,7 @@ struct {
 
 int mem_alloc(u64 addr, u32 stack_id, const char *slab, size_t bytes_alloc) {
   u64 tgid_pid = bpf_get_current_pid_tgid();
-  struct TaskKey task_key = {
-    .tgid_pid = tgid_pid,
-    .addr = addr
-  };
+  struct TaskKey task_key = {.tgid_pid = tgid_pid, .addr = addr};
   struct TaskInfo task_info;
 
   __builtin_memset(&task_info, 0, sizeof(struct TaskInfo));
@@ -75,10 +72,7 @@ int mem_alloc(u64 addr, u32 stack_id, const char *slab, size_t bytes_alloc) {
 }
 
 int mem_free(u64 tgid_pid, u64 addr) {
-  struct TaskKey task_key = {
-    .tgid_pid = tgid_pid,
-    .addr = addr
-  };
+  struct TaskKey task_key = {.tgid_pid = tgid_pid, .addr = addr};
 
   bpf_map_delete_elem(&slab_info, &task_key);
 

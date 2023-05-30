@@ -2,63 +2,28 @@ package collector
 
 import (
 	"fmt"
-	"hermes/parser"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
 
+	"hermes/common"
+	"hermes/log"
+
 	"gopkg.in/yaml.v2"
 )
 
-type TaskType uint32
-
 const taskTypeKey = "task_type"
-const (
-	None TaskType = iota
-	Binary
-	Trace
-	Profile
-	Ebpf
-	PSI
-	CpuInfo
-	MemoryInfo
-)
-
-func parseTaskType(val string) TaskType {
-	mapper := map[string]TaskType{
-		BinaryTask:     Binary,
-		TraceTask:      Trace,
-		ProfileTask:    Profile,
-		EbpfTask:       Ebpf,
-		PSITask:        PSI,
-		CpuInfoTask:    CpuInfo,
-		MemoryInfoTask: MemoryInfo,
-	}
-
-	taskType, isExist := mapper[val]
-	if !isExist {
-		return None
-	}
-	return taskType
-}
-
 const tasksDir = "tasks"
 
 type TaskContext struct {
-	Type    TaskType
+	Type    common.TaskType
 	Context interface{}
 }
 
-type TaskResult struct {
-	Err         error
-	ParserType  parser.ParserType
-	OutputFiles []string
-}
-
 type TaskInstance interface {
-	GetParserType(context interface{}) parser.ParserType
-	Process(context interface{}, outputPath string, result chan TaskResult)
+	GetLogDataPathPostfix() string
+	Process(context interface{}, logDataPathGenerator log.LogDataPathGenerator, result chan error)
 }
 
 type Task struct {
@@ -69,19 +34,19 @@ type Task struct {
 func unmarshalTask(taskType string, param, paramOverride *[]byte, taskContext *TaskContext) error {
 	var context interface{}
 	switch taskType {
-	case BinaryTask:
+	case common.BinaryTask:
 		context = &BinaryContext{}
-	case TraceTask:
+	case common.TraceTask:
 		context = &TraceContext{}
-	case ProfileTask:
+	case common.ProfileTask:
 		context = &ProfileContext{}
-	case EbpfTask:
+	case common.MemoryEbpfTask:
 		context = &EbpfContext{}
-	case PSITask:
+	case common.PSITask:
 		context = &PSIContext{}
-	case CpuInfoTask:
+	case common.CpuInfoTask:
 		context = &CpuInfoContext{}
-	case MemoryInfoTask:
+	case common.MemoryInfoTask:
 		context = &MemoryInfoContext{}
 	}
 
@@ -96,7 +61,7 @@ func unmarshalTask(taskType string, param, paramOverride *[]byte, taskContext *T
 		}
 	}
 	taskContext.Context = context
-	taskContext.Type = parseTaskType(taskType)
+	taskContext.Type = common.TaskNameToType(taskType)
 	return nil
 }
 
@@ -147,75 +112,68 @@ func NewTask(configDir string, routine Routine) (*Task, error) {
 	return &task, nil
 }
 
-func (task *Task) getInstance(taskType TaskType) (TaskInstance, error) {
-	switch taskType {
-	case Binary:
-		return NewTaskBinaryInstance()
-	case Trace:
-		return NewTaskTraceInstance()
-	case Profile:
-		return NewTaskProfileInstance()
-	case Ebpf:
-		return NewTaskEbpfInstance()
-	case PSI:
-		return NewTaskPSIInstance()
-	case CpuInfo:
-		return NewCpuInfoInstance()
-	case MemoryInfo:
-		return NewMemoryInfoInstance()
+func (task *Task) getInstance(taskType common.TaskType) (TaskInstance, error) {
+	instGetMapping := map[common.TaskType]func(taskType common.TaskType) (TaskInstance, error){
+		common.Binary:     NewTaskBinaryInstance,
+		common.Trace:      NewTaskTraceInstance,
+		common.Profile:    NewTaskProfileInstance,
+		common.MemoryEbpf: NewTaskEbpfInstance,
+		common.PSI:        NewTaskPSIInstance,
+		common.CpuInfo:    NewCpuInfoInstance,
+		common.MemoryInfo: NewMemoryInfoInstance,
 	}
 
-	return nil, fmt.Errorf("Unhandled task type [%d]", taskType)
+	getInst, isExist := instGetMapping[taskType]
+	if !isExist {
+		return nil, fmt.Errorf("Unhandled task type [%d]", taskType)
+	}
+	return getInst(taskType)
 }
 
-func (task *Task) execute(context *TaskContext, outputPath string, result chan TaskResult) {
+func (task *Task) execute(context *TaskContext, logDir, logDataLabel string, errChan chan error) {
 	instance, err := task.getInstance(context.Type)
 	if err != nil {
-		result <- TaskResult{}
+		errChan <- err
 		return
 	}
 
-	instance.Process(context.Context, outputPath, result)
+	logDataPathGenerator := log.GetLogDataPathGenerator(logDir, logDataLabel)
+	instance.Process(context.Context, logDataPathGenerator, errChan)
 }
 
-func (task *Task) getParserType(context *TaskContext) parser.ParserType {
-	instance, err := task.getInstance(context.Type)
+func (task *Task) GetCondLogDataPathPostfix() string {
+	instance, err := task.getInstance(task.Cond.Type)
 	if err != nil {
-		return parser.None
+		return "*"
 	}
-	return instance.GetParserType(context.Context)
+	return ".cond" + instance.GetLogDataPathPostfix()
 }
 
-func (task *Task) Condition(outputPath string) TaskResult {
-	if task.Cond.Type == None {
-		return TaskResult{}
+func (task *Task) Condition(logDir, logDataLabel string) error {
+	if task.Cond.Type == common.None {
+		return nil
 	}
 
-	result := make(chan TaskResult)
-	go task.execute(&task.Cond, outputPath, result)
-	return <-result
+	errChan := make(chan error)
+	go task.execute(&task.Cond, logDir, logDataLabel+".cond", errChan)
+	return <-errChan
 }
 
-func (task *Task) GetCondParserType() parser.ParserType {
-	if task.Cond.Type == None {
-		return parser.None
+func (task *Task) GetTaskLogDataPathPostfix() string {
+	instance, err := task.getInstance(task.Task.Type)
+	if err != nil {
+		return "*"
 	}
-	return task.getParserType(&task.Cond)
+	return ".task" + instance.GetLogDataPathPostfix()
 }
 
-func (task *Task) Process(outputPath string, result chan TaskResult) {
-	if task.Task.Type == None {
+func (task *Task) Process(logDir, logDataLabel string, errChan chan error) {
+	var err error
+	if task.Task.Type == common.None {
 		go func() {
-			result <- TaskResult{}
+			errChan <- err
 		}()
 		return
 	}
-	go task.execute(&task.Task, outputPath, result)
-}
-
-func (task *Task) GetTaskParserType() parser.ParserType {
-	if task.Task.Type == None {
-		return parser.None
-	}
-	return task.getParserType(&task.Task)
+	go task.execute(&task.Task, logDir, logDataLabel+".task", errChan)
 }

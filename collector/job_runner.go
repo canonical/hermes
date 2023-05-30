@@ -3,56 +3,53 @@ package collector
 import (
 	"context"
 	"fmt"
-	"hermes/parser"
-	"os"
-	"path/filepath"
-	"strconv"
+	"hermes/log"
+	"hermes/storage"
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
 type JobRunner struct {
 	configDir     string
-	outputDir     string
+	logDir        string
+	storEngine    storage.StorEngine
 	quit          chan bool
 	jobsInProcess sync.Map
 }
 
-func NewJobRunner() (*JobRunner, error) {
+func NewJobRunner(configDir, logDir, storEngine string) (*JobRunner, error) {
+	err := log.PrepareLogDataDir(logDir)
+	if err != nil {
+		return nil, err
+	}
+
+	storEngineInst, err := storage.GetStorEngine(storEngine, logDir)
+	if err != nil {
+		return nil, err
+	}
+
 	return &JobRunner{
-		outputDir:     "",
+		configDir:     configDir,
+		logDir:        logDir,
+		storEngine:    storEngineInst,
 		quit:          make(chan bool),
 		jobsInProcess: sync.Map{}}, nil
 }
 
-func (runner *JobRunner) prepareOutputDir(timestamp int64, jobName string) (string, error) {
-	outputDir := filepath.Join(runner.outputDir, strconv.FormatInt(timestamp, 10), jobName)
-	err := os.MkdirAll(outputDir, os.ModePerm)
-	if err != nil {
-		return "", err
-	}
-
-	return outputDir, nil
-}
-
 func (runner *JobRunner) newJob(job Job) {
-	var logMeta parser.LogMetadata
+	logMeta := log.LogMetadata{
+		LogDataLabel: uuid.NewString(),
+	}
 	timestamp := time.Now().Unix()
 	runner.jobsInProcess.Store(job.Name, timestamp)
 	defer runner.jobsInProcess.Delete(job.Name)
 
 	routineName := job.Start
 
-	outputDir, err := runner.prepareOutputDir(timestamp, job.Name)
-	if err != nil {
-		logrus.Error(err)
-		return
-	}
-
 	for routineName != "" {
-		outputPath := filepath.Join(outputDir, routineName)
 		routine, isExist := job.Routines[routineName]
 		if !isExist {
 			logrus.Errorf("Routine [%s] does not exist", routineName)
@@ -65,39 +62,36 @@ func (runner *JobRunner) newJob(job Job) {
 			return
 		}
 
-		taskResult := task.Condition(outputPath)
-		if len(taskResult.OutputFiles) > 0 {
-			logMeta.Metas = append(logMeta.Metas, parser.Metadata{
-				Type: task.GetCondParserType(),
-				Logs: taskResult.OutputFiles,
-			})
-		}
-		if taskResult.Err != nil {
+		err = task.Condition(runner.logDir, logMeta.LogDataLabel)
+		logMeta.AddMetadata(log.Metadata{
+			TaskType:       int(task.Cond.Type),
+			LogDataPostfix: task.GetCondLogDataPathPostfix(),
+		})
+		if err != nil {
 			routineName = routine.CondFail
 			continue
 		}
 
-		result := make(chan TaskResult)
-		task.Process(outputPath, result)
+		errChan := make(chan error)
+		task.Process(runner.logDir, logMeta.LogDataLabel, errChan)
 		select {
 		case <-runner.quit:
 			return
-		case taskResult = <-result:
-			if taskResult.Err != nil {
-				logrus.Errorf("Task [%s] failed, err [%s].", routineName, taskResult.Err)
+		case err := <-errChan:
+			if err != nil {
+				logrus.Errorf("Task [%s] failed, err [%s].", routineName, err)
 				return
-			} else if len(taskResult.OutputFiles) > 0 {
-				logMeta.Metas = append(logMeta.Metas, parser.Metadata{
-					Type: task.GetTaskParserType(),
-					Logs: taskResult.OutputFiles,
-				})
 			}
+			logMeta.AddMetadata(log.Metadata{
+				TaskType:       int(task.Task.Type),
+				LogDataPostfix: task.GetTaskLogDataPathPostfix(),
+			})
 		}
 		routineName = routine.CondSucc
 	}
 
-	if err := logMeta.ToFile(outputDir); err != nil {
-		logrus.Errorf("Failed to save metadata, err [%s]", err)
+	if err := runner.storEngine.Save(timestamp, logMeta); err != nil {
+		logrus.Errorf("Failed to save log metadata, err [%s]", err)
 	}
 }
 
@@ -119,8 +113,6 @@ func (runner *JobRunner) run(ctx context.Context) {
 	}
 }
 
-func (runner *JobRunner) Run(ctx context.Context, configDir, outputDir string) {
-	runner.configDir = configDir
-	runner.outputDir = outputDir
+func (runner *JobRunner) Run(ctx context.Context) {
 	go runner.run(ctx)
 }

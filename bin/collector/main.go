@@ -8,23 +8,25 @@ import (
 	"os/signal"
 
 	"hermes/collector"
+	"hermes/common"
 
 	"github.com/sirupsen/logrus"
 )
 
 var (
-	configDir string
-	outputDir string
+	metadataDir string
+	logDir      string
+	storEngine  string
 )
 
 func init() {
-	flag.StringVar(&configDir, "config_dir", "/root/config/", "The path of config directory")
-	flag.StringVar(&outputDir, "output_dir", "/var/log/collector/", "The path of output directory")
-	flag.Usage = usage
+	flag.StringVar(&logDir, "log_dir", "/var/log/collector/", "The path of log directory")
+	flag.StringVar(&storEngine, "storage_engine", "file", "The storage engine")
+	flag.Usage = Usage
 }
 
-func usage() {
-	fmt.Println("Usage: collector [config_dir] [output_dir]")
+func Usage() {
+	fmt.Println("Usage: collector [output_dir] [storage_engine]")
 	flag.PrintDefaults()
 }
 
@@ -34,7 +36,14 @@ func main() {
 
 	flag.Parse()
 
-	jobQueue, err := collector.NewJobQueue()
+	configDir := metadataDir + "/config/"
+
+	err := common.LoadEnv(metadataDir)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+
+	jobQueue, err := collector.NewJobQueue(configDir, logDir, storEngine)
 	if err != nil {
 		logrus.Fatal(err)
 	}
@@ -44,7 +53,7 @@ func main() {
 		logrus.Fatal(err)
 	}
 
-	jobQueue.Run(ctx, configDir, outputDir)
+	jobQueue.Run(ctx)
 
 	configWatcher.Run(ctx, configDir)
 	defer configWatcher.Release()

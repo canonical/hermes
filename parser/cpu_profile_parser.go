@@ -3,9 +3,13 @@ package parser
 import (
 	"bufio"
 	"encoding/json"
+	"os"
+	"path/filepath"
+	"strconv"
+
 	"hermes/backend/perf"
 	"hermes/backend/utils"
-	"os"
+	"hermes/log"
 )
 
 type CpuProfileParser struct{}
@@ -53,15 +57,22 @@ func (parser *CpuProfileParser) parseStackCollapsedData(logPath string, flameGra
 	return nil
 }
 
-func (parser *CpuProfileParser) Parse(logDir string, logs []string, outputDir string) error {
+func (parser *CpuProfileParser) Parse(logDataPathGenerator log.LogDataPathGenerator, timestamp int64, logDataPostfix, outputDir string) error {
 	flameGraphData := utils.GetFlameGraphData()
-	for _, log := range logs {
-		logPath := logDir + "/" + log
-		if err := parser.parseStackCollapsedData(logPath, flameGraphData); err != nil {
+	matches, err := filepath.Glob(logDataPathGenerator(logDataPostfix))
+	if err != nil {
+		return err
+	}
+
+	for _, filePath := range matches {
+		if err := parser.parseStackCollapsedData(filePath, flameGraphData); err != nil {
 			return err
 		}
 	}
 
-	outputPath := outputDir + "/overall_cpu.stack.json"
+	outputPath := filepath.Join(outputDir, strconv.FormatInt(timestamp, 10), "overall_cpu.stack.json")
+	if err := os.MkdirAll(filepath.Dir(outputPath), os.ModePerm); err != nil {
+		return err
+	}
 	return flameGraphData.WriteToFile(outputPath)
 }
