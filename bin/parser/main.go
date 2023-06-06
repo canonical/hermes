@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"sort"
 
 	"hermes/common"
 	"hermes/parser"
@@ -54,8 +55,13 @@ func main() {
 		logrus.Fatal(err)
 	}
 
-	for timestamp, logMeta := range logMetas {
-		parser, err := parser.NewParser(logDir, outputDir, timestamp, logMeta)
+	timestamps := []int64{}
+	for timestamp, _ := range logMetas {
+		timestamps = append(timestamps, timestamp)
+	}
+	sort.Slice(timestamps, func(i, j int) bool { return timestamps[i] < timestamps[j] })
+	for _, timestamp := range timestamps {
+		parser, err := parser.NewParser(logDir, outputDir, timestamp, logMetas[timestamp])
 		if err != nil {
 			logrus.Errorf("Failed to generate parser for timestamp [%d], err [%s]", timestamp, err)
 			continue
