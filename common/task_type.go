@@ -42,9 +42,9 @@ func TaskNameToType(taskName string) TaskType {
 func TaskTypeToParserCategory(taskType TaskType) string {
 	switch taskType {
 	case CpuInfo, Profile:
-		return "CPU"
+		return "cpu_profile"
 	case MemoryInfo, MemoryEbpf:
-		return "Memory"
+		return "memory_ebpf"
 	}
 	return ""
 }

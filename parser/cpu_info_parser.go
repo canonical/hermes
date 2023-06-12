@@ -1,18 +1,18 @@
 package parser
 
 import (
-	"encoding/csv"
 	"encoding/json"
 	"io/ioutil"
 	"os"
-	"strconv"
 
+	"hermes/collector"
 	"hermes/log"
 )
 
 type CpuInfoRecord struct {
+	Timestamp int64  `json:"timestamp"`
 	Threshold uint64 `json:"threshold"`
-	Usage     uint64 `json:"usage"`
+	Val       uint64 `json:"val"`
 }
 
 type CpuInfoParser struct{}
@@ -21,60 +21,50 @@ func GetCpuInfoParser() (ParserInstance, error) {
 	return &CpuInfoParser{}, nil
 }
 
-func (parser *CpuInfoParser) getCpuInfoRecord(path string) (*CpuInfoRecord, error) {
+func (parser *CpuInfoParser) getCpuInfoRecord(timestamp int64, path string) (*CpuInfoRecord, error) {
 	bytes, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
 
-	var rec CpuInfoRecord
-	if err := json.Unmarshal(bytes, &rec); err != nil {
+	var context collector.CpuInfoContext
+	if err := json.Unmarshal(bytes, &context); err != nil {
 		return nil, err
 	}
-	return &rec, nil
+	return &CpuInfoRecord{
+		Timestamp: timestamp,
+		Threshold: context.Threshold,
+		Val:       context.Usage,
+	}, nil
 }
 
-func (parser *CpuInfoParser) getCSVData(timestamp int64, rec *CpuInfoRecord) ([]string, error) {
-	return []string{strconv.FormatInt(timestamp, 10), strconv.FormatUint(rec.Threshold, 10), strconv.FormatUint(rec.Usage, 10)}, nil
-}
-
-func (parser *CpuInfoParser) writeCSVData(csvData []string, path string) error {
-	var needHeader = false
-
-	if _, err := os.Stat(path); err != nil {
-		needHeader = true
+func (parser *CpuInfoParser) writeJSONData(rec *CpuInfoRecord, path string) error {
+	var recs []CpuInfoRecord
+	if _, err := os.Stat(path); err == nil {
+		bytes, err := ioutil.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		if err := json.Unmarshal(bytes, &recs); err != nil {
+			return err
+		}
 	}
-	fp, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+
+	recs = append(recs, *rec)
+	bytes, err := json.Marshal(&recs)
 	if err != nil {
 		return err
 	}
-	writer := csv.NewWriter(fp)
-
-	defer func() {
-		writer.Flush()
-		fp.Close()
-	}()
-
-	if needHeader {
-		header := []string{"timestamp", "threshold", "val"}
-		writer.Write(header)
-	}
-	writer.Write(csvData)
-	return nil
+	return ioutil.WriteFile(path, bytes, 0644)
 }
 
 func (parser *CpuInfoParser) Parse(logDataPathGenerator log.LogDataPathGenerator, timestamp int64, logDataPostfix, outputDir string) error {
-	rec, err := parser.getCpuInfoRecord(logDataPathGenerator(logDataPostfix))
+	rec, err := parser.getCpuInfoRecord(timestamp, logDataPathGenerator(logDataPostfix))
 	if err != nil {
 		return err
 	}
 
-	csvData, err := parser.getCSVData(timestamp, rec)
-	if err != nil {
-		return err
-	}
-
-	err = parser.writeCSVData(csvData, outputDir+string("/overview"))
+	err = parser.writeJSONData(rec, outputDir+string("/overview"))
 	if err != nil {
 		return err
 	}
