@@ -1,10 +1,10 @@
-import React, {useState, useEffect} from 'react'
-import {createRoot} from 'react-dom/client'
+import React, { useState, useEffect } from 'react'
+import { createRoot } from 'react-dom/client'
 import styled from 'styled-components'
 import axios from 'axios'
 import schema from '../../schema_pb'
-import CpuView from './cpu_view'
-import MemoryView from './memory_view'
+import CpuProfileView from './cpu_profile_view'
+import MemoryEbpfView from './memory_ebpf_view'
 
 const Tab = styled.button`
   font-size: 20px;
@@ -14,7 +14,7 @@ const Tab = styled.button`
   background: white;
   border: 0;
   outline: 0;
-  ${({active}) =>
+  ${({ active }) =>
     active &&
     `
     border-bottom: 2px solid black;
@@ -24,31 +24,39 @@ const Tab = styled.button`
 const ButtonGroup = styled.div`
   display: flex;
 `;
-var tasks = []
+var routines = []
 
-const TabContent = ({task}) => {
-  switch (task) {
-  case 'CPU':
-    return <CpuView />
-  case 'Memory':
-    return <MemoryView />
+const TabContent = ({ routine }) => {
+  switch (routine) {
+    case 'cpu_profile':
+      return <CpuProfileView />
+    case 'memory_ebpf':
+      return <MemoryEbpfView />
   }
   return null
 }
 
-
 const TabGroup = () => {
   const [active, setActive] = useState('')
   const [isLoading, setLoading] = useState(true);
-  const fetchTasks = async () => {
-    let resp = await axios.get("/api/tasks", {responseType: 'arraybuffer'})
-    tasks = schema.Tasks.deserializeBinary(resp.data).getTasksList()
-    setActive(tasks[0])
+  const fetchRoutines = async () => {
+    let resp = await axios.get("/api/routines", { responseType: 'arraybuffer' })
+    routines = schema.Routines.deserializeBinary(resp.data).getRoutinesList()
+    setActive(routines[0])
     setLoading(false)
+  }
+  const tabTitle = (routine) => {
+    switch (routine) {
+      case 'cpu_profile':
+        return "CPU Profile"
+      case 'memory_ebpf':
+        return "Memory Ebpf"
+    }
+    return ""
   }
 
   useEffect(() => {
-    fetchTasks()
+    fetchRoutines()
   }, [])
 
   if (isLoading) {
@@ -57,18 +65,18 @@ const TabGroup = () => {
   return (
     <div>
       <ButtonGroup>
-        {tasks.map(task => (
+        {routines.map(routine => (
           <Tab
-            key={task}
-            active={active === task}
-            onClick={() => setActive(task)}
+            key={routine}
+            active={active === routine}
+            onClick={() => setActive(routine)}
           >
-            {task}
+            tabTitle(routine)
           </Tab>
         ))}
       </ButtonGroup>
       <TabContent
-        task={active}
+        routine={active}
       />
     </div>
   )

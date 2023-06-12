@@ -15,17 +15,17 @@ func NewContentParser(viewDir string) *ContentParser {
 	}
 }
 
-func (parser *ContentParser) GetTasks() *pb.Tasks {
-	var tasks []string
+func (parser *ContentParser) GetRoutines() *pb.Routines {
+	var routines []string
 
 	files, err := ioutil.ReadDir(parser.dir)
 	if err != nil {
 		return nil
 	}
 	for _, file := range files {
-		tasks = append(tasks, file.Name())
+		routines = append(routines, file.Name())
 	}
-	return &pb.Tasks{
-		Tasks: tasks,
+	return &pb.Routines{
+		Routines: routines,
 	}
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
@@ -42,7 +43,6 @@ func main() {
 	router.LoadHTMLGlob(frontendDir + string("/*.html"))
 	router.Static("/assets", frontendDir+string("/assets"))
 	router.Static("/css", frontendDir+string("/css"))
-	router.Static("/view", viewDir)
 
 	page := router.Group("/")
 	{
@@ -53,8 +53,34 @@ func main() {
 
 	api := router.Group("/api")
 	{
-		api.GET("/tasks", func(ctx *gin.Context) {
-			ctx.ProtoBuf(http.StatusOK, contentParser.GetTasks())
+		api.GET("/routines", func(ctx *gin.Context) {
+			ctx.ProtoBuf(http.StatusOK, contentParser.GetRoutines())
+		})
+	}
+
+	cpu := router.Group("/cpu")
+	{
+		cpu.GET("/cpu_profile", func(ctx *gin.Context) {
+			path := filepath.Join(viewDir, "cpu_profile", "overview")
+			ctx.File(path)
+		})
+		cpu.GET("/cpu_profile/:timestamp", func(ctx *gin.Context) {
+			timestamp := ctx.Param("timestamp")
+			path := filepath.Join(viewDir, "cpu_profile", timestamp, "overall_cpu.stack.json")
+			ctx.File(path)
+		})
+	}
+
+	mem := router.Group("/memory")
+	{
+		mem.GET("/memory_ebpf", func(ctx *gin.Context) {
+			path := filepath.Join(viewDir, "memory_ebpf", "overview")
+			ctx.File(path)
+		})
+		mem.GET("/memory_ebpf/:timestamp", func(ctx *gin.Context) {
+			timestamp := ctx.Param("timestamp")
+			path := filepath.Join(viewDir, "memory_ebpf", timestamp, "slab.stack.json")
+			ctx.File(path)
 		})
 	}
 
