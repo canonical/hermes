@@ -1,0 +1,37 @@
+{
+  "$schema": "https://raw.githubusercontent.com/grafana/grafana/master/docs/sources/developers/plugins/plugin.schema.json",
+  "type": "datasource",
+  "name": "Grafana Hermes Datasource",
+  "id": "grafana-hermes-datasource",
+  "metrics": true,
+  "backend": true,
+  "executable": "gpx_grafana_hermes_datasource",
+  "info": {
+    "description": "",
+    "author": {
+      "name": "Canonical"
+    },
+    "keywords": [
+      "datasource"
+    ],
+    "logos": {
+      "small": "img/logo.svg",
+      "large": "img/logo.svg"
+    },
+    "links": [],
+    "screenshots": [],
+    "version": "%VERSION%",
+    "updated": "%TODAY%"
+  },
+  "includes": [
+    {
+      "type": "dashboard",
+      "name": "Hermes CPU Profile",
+      "path": "dashboards/troubleshoot/hermes-cpu-profile.json"
+    }
+  ],
+  "dependencies": {
+    "grafanaDependency": ">=9.5.2",
+    "plugins": []
+  }
+}

@@ -1,20 +1,18 @@
 .PHONY: all build clean install
 
-RM               := rm -f
-RMDIR            := rm -rf
-NPM              := npm
-MKDIRP           := mkdir -p
-CPDIR            := cp -r
-PROTOC           := protoc
+RM := rm -f
+RMDIR := rm -rf
+MKDIRP := mkdir -p
+CPDIR := cp -r
 SRC_FRONTEND_DIR := ./build/
 DST_FRONTEND_DIR := $(if $(DESTDIR),$(DESTDIR),$(HOME))/frontend/
 
 all: clean build
 
 build:
-	$(NPM) install
-	$(PROTOC) -I ../proto --js_out=import_style=commonjs,binary:. ../proto/*.proto
-	$(NPM) run build
+	npm install
+	protoc -I ../proto --js_out=import_style=commonjs,binary:. ../proto/*.proto
+	npm run build
 
 clean:
 	$(RMDIR) ./build

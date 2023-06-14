@@ -1,65 +1,64 @@
 .PHONY: all check auto_install generate build install install_bin install_ui clean
 
-GO              := go
-RM              := rm -f
-RMDIR           := rm -rf
-MKDIRP          := mkdir -p
-CPDIR           := cp -r
-CLANG           := clang
-MAKE            := make
-SNAP            := snap
-APT             := apt
-DPKG            := dpkg
-ECHO            := echo
-WHICH           := which
-CURL            := curl
-PROTO_DIR       := proto
-FRONTEND_DIR    := frontend
-INSTALL_DIR     := ./install/
-METADATA_DIR    := $(if $(DESTDIR),$(DESTDIR),$(HOME))/hermes/
-SRC_CONFIG_DIR  := ./config/
-DST_CONFIG_DIR  := $(METADATA_DIR)/config/
-INSTALL_BIN     := install -m 755
-DST_BIN_DIR     := /usr/sbin/
-CFLAGS          := -O2 -g -Wall -Werror $(CFLAGS)
+RM := rm -f
+RMDIR := rm -rf
+MKDIRP := mkdir -p
+CPDIR := cp -r
+PROTO_DIR := proto
+FRONTEND_DIR := frontend
+GRAFANA_DIR := grafana_app
+INSTALL_DIR := ./install/
+METADATA_DIR := $(if $(DESTDIR),$(DESTDIR),$(HOME))/hermes/
+SRC_CONFIG_DIR := ./config/
+DST_CONFIG_DIR := $(METADATA_DIR)/config/
+INSTALL_BIN := install -m 755
+DST_BIN_DIR := /usr/sbin/
+CFLAGS := -O2 -g -Wall -Werror $(CFLAGS)
 
 all: clean build
 
 check:
-	$(GO) vet ./...
+	go vet ./...
 
 auto_install:
-ifeq ($(shell $(DPKG) -s curl 2> /dev/null; $(ECHO) $$?), 1)
-	$(APT) install -y curl
+ifeq ($(shell dpkg -s curl 2> /dev/null; echo $$?), 1)
+	apt install -y curl
 endif
-ifeq ($(shell $(DPKG) -s llvm 2> /dev/null; $(ECHO) $$?), 1)
-	$(APT) install -y llvm
+ifeq ($(shell dpkg -s llvm 2> /dev/null; echo $$?), 1)
+	apt install -y llvm
 endif
-ifeq ($(shell $(DPKG) -s clang 2> /dev/null; $(ECHO) $$?), 1)
-	$(APT) install -y clang
+ifeq ($(shell dpkg -s clang 2> /dev/null; echo $$?), 1)
+	apt install -y clang
 endif
-ifeq ($(shell $(DPKG) -s libbpf-dev 2> /dev/null; $(ECHO) $$?), 1)
-	$(APT) install -y libbpf-dev
+ifeq ($(shell dpkg -s libbpf-dev 2> /dev/null; echo $$?), 1)
+	apt install -y libbpf-dev
 endif
-ifeq ($(shell $(DPKG) -s gcc-multilib 2> /dev/null; $(ECHO) $$?), 1)
-	$(APT) install -y gcc-multilib
+ifeq ($(shell dpkg -s gcc-multilib 2> /dev/null; echo $$?), 1)
+	apt install -y gcc-multilib
 endif
-ifeq ($(shell $(DPKG) -s protobuf-compiler 2> /dev/null; $(ECHO) $$?), 1)
-	$(APT) install -y protobuf-compiler
+ifeq ($(shell dpkg -s protobuf-compiler 2> /dev/null; echo $$?), 1)
+	apt install -y protobuf-compiler
 endif
-	$(CURL) -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash - && apt install -y nodejs
-	$(SNAP) install go --classic
-	$(GO) install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+	curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash - && apt install -y nodejs
+	snap install go --classic
+	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 
-generate: export BPF_CLANG := $(CLANG)
+build: auto_install frontend backend grafana
+
+generate: export BPF_CLANG := clang
 generate: export BPF_CFLAGS := $(CFLAGS)
 generate: auto_install
-	$(GO) generate ./backend/ebpf/...
+	go generate ./backend/ebpf/...
 
-build: auto_install generate
-	$(MAKE) -C $(PROTO_DIR) build
-	$(GO) build -ldflags "-X main.metadataDir=$(METADATA_DIR)" -o $(INSTALL_DIR) ./...
-	$(MAKE) -C $(FRONTEND_DIR) build
+backend: generate
+	make -C $(PROTO_DIR) build
+	go build -ldflags "-X main.metadataDir=$(METADATA_DIR)" -o $(INSTALL_DIR) ./...
+
+frontend: 
+	make -C $(FRONTEND_DIR) build
+
+grafana:
+	make -C $(GRAFANA_DIR) build
 
 install: install_bin install_ui
 
@@ -70,16 +69,17 @@ install_bin:
 	$(CPDIR) $(SRC_CONFIG_DIR)* $(DST_CONFIG_DIR)
 
 install_ui:
-	$(MAKE) -C $(FRONTEND_DIR) install
+	make -C $(FRONTEND_DIR) install
 
 clean:
-ifneq ($(shell $(WHICH) $(GO)),)
-	$(GO) clean
+ifneq ($(shell which go),)
+	go clean
 endif
 	$(RMDIR) $(INSTALL_DIR)
 	$(RM) ./backend/ebpf/*/bpf_bpfeb*.go
 	$(RM) ./backend/ebpf/*/bpf_bpfeb*.o
 	$(RM) ./backend/ebpf/*/bpf_bpfel*.go
 	$(RM) ./backend/ebpf/*/bpf_bpfel*.o
-	$(MAKE) -C $(PROTO_DIR) clean
-	$(MAKE) -C $(FRONTEND_DIR) clean
+	make -C $(PROTO_DIR) clean
+	make -C $(FRONTEND_DIR) clean
+	make -C $(GRAFANA_DIR) clean

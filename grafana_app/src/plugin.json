@@ -1,0 +1,36 @@
+{
+  "$schema": "https://raw.githubusercontent.com/grafana/grafana/master/docs/sources/developers/plugins/plugin.schema.json",
+  "type": "app",
+  "name": "Grafana Hermes App",
+  "id": "grafana-hermes-app",
+  "info": {
+    "keywords": [
+      "hermes"
+    ],
+    "description": "",
+    "author": {
+      "name": "Canonical"
+    },
+    "logos": {
+      "small": "img/logo.svg",
+      "large": "img/logo.svg"
+    },
+    "screenshots": [],
+    "version": "%VERSION%",
+    "updated": "%TODAY%"
+  },
+  "includes": [
+    {
+      "type": "datasource",
+      "name": "Hermes Metrics"
+    },
+    {
+      "type": "panel",
+      "name": "Perf Analysis Panel"
+    }
+  ],
+  "dependencies": {
+    "grafanaDependency": ">=9.5.2",
+    "plugins": []
+  }
+}
