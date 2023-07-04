@@ -14,12 +14,6 @@ export const PerfAnalysisPanel = ({
   timeRange,
   onChangeTimeRange,
 }: Props) => {
-  console.log(options)
-  console.log(data)
-  console.log(width)
-  console.log(height)
-  console.log(timeZone)
-  console.log(timeRange)
   const dataAvailable = data?.series && data.series.length > 0;
 
   return (
