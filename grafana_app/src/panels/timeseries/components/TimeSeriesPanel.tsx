@@ -5,7 +5,7 @@ import { TimeSeries, TooltipDisplayMode, TooltipPlugin, ZoomPlugin } from '@graf
 
 interface Props extends PanelProps<Options> { }
 
-export const PerfAnalysisPanel = ({
+export const TimeSeriesPanel = ({
   options,
   data,
   width,

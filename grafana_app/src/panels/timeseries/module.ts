@@ -1,9 +1,9 @@
 import { FieldColorModeId, FieldConfigProperty, PanelPlugin } from "@grafana/data";
 import { GraphFieldConfig, graphFieldOptions, LegendDisplayMode, PointVisibility } from '@grafana/ui';
-import { PerfAnalysisPanel } from "./components/PerfAnalysisPanel"
+import { TimeSeriesPanel } from "./components/TimeSeriesPanel"
 import { Options } from "./types"
 
-export const plugin = new PanelPlugin<Options, GraphFieldConfig>(PerfAnalysisPanel)
+export const plugin = new PanelPlugin<Options, GraphFieldConfig>(TimeSeriesPanel)
   .useFieldConfig({
     standardOptions: {
       [FieldConfigProperty.Color]: {

@@ -36,7 +36,7 @@ func handleCpuProfileResp(response []byte) ([]*data.Frame, error) {
 	return []*data.Frame{thresFrames, valFrames}, nil
 }
 
-func HandleAPIResp(group, routine string, response []byte) ([]*data.Frame, error) {
+func HandleQueryResp(group, routine string, response []byte) ([]*data.Frame, error) {
 	handlers := map[string]map[string]func([]byte) ([]*data.Frame, error){
 		"cpu": {
 			"cpu_profile": handleCpuProfileResp,

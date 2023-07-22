@@ -2,11 +2,11 @@
   panel: {
     new(
       datasource,
-      targets
+      target
     ):: {
-      type: 'hermes-perf-analysis-panel',
+      type: 'hermes-time-series-panel',
       datasource: datasource,
-      targets: targets,
+      targets: [target],
     }
   }
 }

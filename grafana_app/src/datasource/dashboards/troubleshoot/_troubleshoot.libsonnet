@@ -6,7 +6,7 @@ local troubleshoot = import '_troubleshoot.libsonnet';
     {
       id: 'hermes-cpu-profile',
       title: 'CPU Profile',
-      targets: [{refId: 'A', group: 'cpu', routine: 'cpu_profile'}],
+      target: {refId: 'A', group: 'cpu', routine: 'cpu_profile'},
     },
   ],
 

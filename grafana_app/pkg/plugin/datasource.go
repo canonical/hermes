@@ -11,7 +11,6 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/backend/httpclient"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/log"
-	"github.com/grafana/grafana-plugin-sdk-go/data"
 )
 
 var (
@@ -27,7 +26,7 @@ func NewDatasource(settings backend.DataSourceInstanceSettings) (instancemgmt.In
 	}
 	client, err := httpclient.New(opts)
 	if err != nil {
-		return nil, fmt.Errorf("httpclient new %w", err)
+		return nil, fmt.Errorf("http client new %w", err)
 	}
 	return &Datasource{
 		settings:   settings,
@@ -48,30 +47,31 @@ func (ds *Datasource) QueryData(ctx context.Context, req *backend.QueryDataReque
 	response := backend.NewQueryDataResponse()
 
 	for _, q := range req.Queries {
+		var err error
 		res := backend.DataResponse{}
-		if query, err := ParseQuery(q); err != nil {
+		defer func() {
 			res.Error = err
-		} else if url, err := url.JoinPath(ds.settings.URL, query.Group, query.Routine); err != nil {
-			res.Error = err
-		} else {
-			frames, err := ds.query(ctx, url, query)
+			response.Responses[q.RefID] = res
+		}()
 
-			if err != nil {
-				log.DefaultLogger.Error("QueryData", "err", err)
-				res.Error = err
+		if query, err := ParseQuery(q); err != nil {
+			log.DefaultLogger.Error("query data: failed to parse query", "err", err)
+		} else if urlPath, err := url.JoinPath(ds.settings.URL, query.Group, query.Routine); err != nil {
+			log.DefaultLogger.Error("query data: failed to join path", "err", err)
+		} else {
+			if resp, err := ds.query(ctx, urlPath); err != nil {
+				log.DefaultLogger.Error("query data: failed to query", "err", err)
+			} else if frames, err := HandleQueryResp(query.Group, query.Routine, resp); err != nil {
+				log.DefaultLogger.Error("query data: failed to handle resp", "err", err)
 			} else {
-				log.DefaultLogger.Error("QueryData", "frames", frames)
 				res.Frames = append(res.Frames, frames...)
 			}
 		}
-		response.Responses[q.RefID] = res
 	}
-
-	log.DefaultLogger.Error("QueryData", "response", response)
 	return response, nil
 }
 
-func (ds *Datasource) query(ctx context.Context, url string, query Query) ([]*data.Frame, error) {
+func (ds *Datasource) query(ctx context.Context, url string) ([]byte, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -95,8 +95,7 @@ func (ds *Datasource) query(ctx context.Context, url string, query Query) ([]*da
 	if err != nil {
 		return nil, err
 	}
-
-	return HandleAPIResp(query.Group, query.Routine, response)
+	return response, nil
 }
 
 func newHealthCheckErrorf(format string, args ...interface{}) *backend.CheckHealthResult {
@@ -125,4 +124,34 @@ func (ds *Datasource) CheckHealth(ctx context.Context, _ *backend.CheckHealthReq
 		Status:  backend.HealthStatusOk,
 		Message: "Data source is working",
 	}, nil
+}
+
+func (ds *Datasource) CallResource(ctx context.Context, req *backend.CallResourceRequest,
+	sender backend.CallResourceResponseSender) error {
+	status := http.StatusInternalServerError
+	respBody := []byte{}
+
+	defer func() {
+		sender.Send(&backend.CallResourceResponse{
+			Status: status,
+			Body:   respBody,
+		})
+	}()
+
+	_url, err := url.Parse(req.URL)
+	if err != nil {
+		return err
+	}
+
+	urlPath, err := url.JoinPath(ds.settings.URL, _url.Path)
+	if err != nil {
+		return err
+	}
+
+	resp, err := ds.query(ctx, urlPath)
+	if err != nil {
+		log.DefaultLogger.Error("query res: failed to query", "err", err)
+		return err
+	}
+	return HandleResResp(resp, &status, &respBody)
 }

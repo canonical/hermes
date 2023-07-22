@@ -1925,6 +1925,11 @@
   resolved "https://registry.npmjs.org/@popperjs/core/-/core-2.11.6.tgz"
   integrity sha512-50/17A98tWUfQ176raKiOGXuYpLyyVMkxxG6oylzL3BPOlA6ADGdK7EYunSa4I064xerltq9TGXs8HmOk5E+vw==
 
+"@pyroscope/flamegraph@^0.35.6":
+  version "0.35.6"
+  resolved "https://registry.npmjs.org/@pyroscope/flamegraph/-/flamegraph-0.35.6.tgz"
+  integrity sha512-YNTNcF3Zb20gO7vbzPUmTOju8AF0p5XBw5eaPlOa8FxPIfUnYQ9sQ/8okde3wrZhYkEiUveo0dcHML6IEng4BA==
+
 "@rc-component/portal@^1.0.0-6":
   version "1.1.1"
   resolved "https://registry.npmjs.org/@rc-component/portal/-/portal-1.1.1.tgz"
