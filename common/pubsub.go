@@ -5,7 +5,8 @@ import (
 )
 
 const (
-	IPCPath = "ipc:///tmp/hermespubsub"
+	IPCPath          = "ipc:///tmp/hermespubsub"
+	JobCompleteTopic = "job-complete"
 )
 
 type PubSubType int

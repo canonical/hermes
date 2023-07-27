@@ -47,6 +47,7 @@ func main() {
 	if err != nil {
 		logrus.Fatal(err)
 	}
+	defer jobQueue.Release()
 
 	configWatcher, err := collector.NewConfigWatcher(jobQueue.Comm)
 	if err != nil {

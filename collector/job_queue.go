@@ -192,3 +192,7 @@ func (jobQueue *JobQueue) Run(ctx context.Context) {
 	jobQueue.runner.Run(ctx)
 	go jobQueue.run(ctx)
 }
+
+func (jobQueue *JobQueue) Release() {
+	jobQueue.runner.Release()
+}

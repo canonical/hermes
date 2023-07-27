@@ -2,7 +2,9 @@ package collector
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"hermes/common"
 	"hermes/log"
 	"hermes/storage"
 	"sync"
@@ -16,6 +18,7 @@ type JobRunner struct {
 	configDir     string
 	logDir        string
 	storEngine    storage.StorEngine
+	pubsub        *common.PubSub
 	quit          chan bool
 	jobsInProcess sync.Map
 }
@@ -31,10 +34,16 @@ func NewJobRunner(configDir, logDir, storEngine string) (*JobRunner, error) {
 		return nil, err
 	}
 
+	pubsub, err := common.NewPubSub(common.Pub, common.JobCompleteTopic)
+	if err != nil {
+		return nil, err
+	}
+
 	return &JobRunner{
 		configDir:     configDir,
 		logDir:        logDir,
 		storEngine:    storEngineInst,
+		pubsub:        pubsub,
 		quit:          make(chan bool),
 		jobsInProcess: sync.Map{}}, nil
 }
@@ -93,6 +102,17 @@ func (runner *JobRunner) newJob(job Job) {
 	if err := runner.storEngine.Save(timestamp, logMeta); err != nil {
 		logrus.Errorf("Failed to save log metadata, err [%s]", err)
 	}
+
+	logMetaPub := log.LogMetaPubFormat{
+		Timestamp:   timestamp,
+		LogMetadata: logMeta,
+	}
+	bytes, err := json.Marshal(logMetaPub)
+	if err != nil {
+		logrus.Errorf("Failed to marshal json data, err [%s]", err)
+	} else {
+		runner.pubsub.Send(bytes)
+	}
 }
 
 func (runner *JobRunner) Add(job Job) error {
@@ -115,4 +135,8 @@ func (runner *JobRunner) run(ctx context.Context) {
 
 func (runner *JobRunner) Run(ctx context.Context) {
 	go runner.run(ctx)
+}
+
+func (runner *JobRunner) Release() {
+	runner.pubsub.Release()
 }
