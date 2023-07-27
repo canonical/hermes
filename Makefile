@@ -43,7 +43,7 @@ endif
 	snap install go --classic
 	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 
-build: auto_install frontend backend grafana
+build: auto_install ui backend grafana
 
 generate: export BPF_CLANG := clang
 generate: export BPF_CFLAGS := $(CFLAGS)
@@ -54,7 +54,7 @@ backend: generate
 	make -C $(PROTO_DIR) build
 	go build -ldflags "-X main.metadataDir=$(METADATA_DIR)" -o $(INSTALL_DIR) ./...
 
-frontend: 
+ui:
 	make -C $(FRONTEND_DIR) build
 
 grafana:
