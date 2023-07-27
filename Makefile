@@ -39,6 +39,9 @@ endif
 ifeq ($(shell dpkg -s protobuf-compiler 2> /dev/null; echo $$?), 1)
 	apt install -y protobuf-compiler
 endif
+ifeq ($(shell dpkg -s libczmq-dev 2> /dev/null; echo $$?), 1)
+	apt install -y libczmq-dev
+endif
 	curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash - && apt install -y nodejs
 	snap install go --classic
 	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest

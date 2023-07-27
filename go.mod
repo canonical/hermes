@@ -15,6 +15,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/joho/godotenv v1.5.1
 	github.com/shirou/gopsutil v3.21.11+incompatible
+	github.com/zeromq/goczmq v4.1.0+incompatible
 	golang.org/x/sys v0.2.0
 	google.golang.org/protobuf v1.28.1
 )
