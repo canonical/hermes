@@ -1,8 +1,10 @@
 package perf
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/bits"
+	"os"
 	"sync/atomic"
 	"unsafe"
 
@@ -45,6 +47,24 @@ type RawRecord struct {
 
 type Record interface {
 	Decode(raw *RawRecord, attr *Attr, symbolizer *symbol.Symbolizer)
+}
+
+func AppendToFile(rec Record, outputPath string) error {
+	bytes, err := json.Marshal(rec)
+	if err != nil {
+		return err
+	}
+
+	fp, err := os.OpenFile(outputPath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+	if err != nil {
+		return err
+	}
+	defer fp.Close()
+
+	if _, err = fp.WriteString(string(bytes) + "\n"); err != nil {
+		return err
+	}
+	return nil
 }
 
 type SampleID struct {

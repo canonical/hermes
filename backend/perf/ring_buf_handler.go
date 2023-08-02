@@ -1,7 +1,6 @@
 package perf
 
 import (
-	"encoding/json"
 	"os"
 	"sync/atomic"
 	"time"
@@ -96,20 +95,6 @@ func (handler *RingBufHandler) poll() PollResp {
 	}
 }
 
-func (handler *RingBufHandler) writeToFile(val string, outputPath string) error {
-	fp, err := os.OpenFile(outputPath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
-	if err != nil {
-		return err
-	}
-	defer fp.Close()
-
-	val += "\n"
-	if _, err = fp.WriteString(val); err != nil {
-		return err
-	}
-	return nil
-}
-
 func (handler *RingBufHandler) parseRecords(outputPath string) error {
 	for {
 		rec, err := handler.parser.GetRecord()
@@ -121,13 +106,8 @@ func (handler *RingBufHandler) parseRecords(outputPath string) error {
 			break
 		}
 
-		bytes, err := json.Marshal(rec)
-		if err != nil {
-			logrus.Errorf(err.Error())
-			continue
-		}
-		if err = handler.writeToFile(string(bytes), outputPath); err != nil {
-			logrus.Errorf("Failed to write file [%s], err [%s]", outputPath, err)
+		if err := AppendToFile(rec, outputPath); err != nil {
+			logrus.Errorf("Failed to append the record to file [%s], err [%s]", outputPath, err)
 		}
 	}
 	return nil
