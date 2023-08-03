@@ -47,8 +47,12 @@ func (instance *TaskProfileInstance) Process(instContext interface{}, logDataPat
 
 	attr := perf.Attr{
 		SampleFormat: perf.SampleFormat{
-			IP:        true,
+			Tid:       true,
 			Callchain: true,
+		},
+		Options: perf.Options{
+			Comm:  true,
+			Mmap2: true,
 		},
 	}
 	perf.TaskClock.SetAttr(&attr)
