@@ -59,6 +59,12 @@ func (instance *TaskProfileInstance) Process(instContext interface{}, logDataPat
 	attr.SetSamplePeriod(1000)
 	attr.SetWakeupEvents(1)
 
+	if synthesizeEvents, err := perf.NewSynthesizeEvents(logDataPathGenerator(".synth_events")); err != nil {
+		logrus.Errorf("Failed to generate object for synthesizing events, err [%s]", err)
+	} else if err := synthesizeEvents.Synthesize(); err != nil {
+		logrus.Errorf("Failed to synthesize events, err [%s]", err)
+	}
+
 	var waitGroup sync.WaitGroup
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(profileContext.Timeout)*time.Second)
 	defer cancel()
