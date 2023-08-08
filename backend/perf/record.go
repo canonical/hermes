@@ -302,7 +302,7 @@ type SampleRecord struct {
 	BranchStack      []BranchEntry `json:"lbr"`
 	RegsUserABI      uint64        `json:"regs_user_abi"`
 	RegsUserRegs     []uint64      `json:"regs_user_regs"`
-	StackUserData    []byte        `josn:"stack_user_data"`
+	StackUserData    []byte        `json:"stack_user_data"`
 	StackUserDynSize uint64        `json:"stack_user_dyn_size"`
 	WeightFull       uint64        `json:"weight_full"`
 	DataSrc          uint64        `json:"data_src"`
@@ -420,7 +420,7 @@ type GroupSampleRecord struct {
 	BranchStack      []BranchEntry    `json:"lbr"`
 	RegsUserABI      uint64           `json:"regs_user_abi"`
 	RegsUserRegs     []uint64         `json:"regs_user_regs"`
-	StackUserData    []byte           `josn:"stack_user_data"`
+	StackUserData    []byte           `json:"stack_user_data"`
 	StackUserDynSize uint64           `json:"stack_user_dyn_size"`
 	WeightFull       uint64           `json:"weight_full"`
 	DataSrc          uint64           `json:"data_src"`
