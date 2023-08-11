@@ -13,8 +13,10 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-const taskTypeKey = "task_type"
-const tasksDir = "tasks"
+const (
+	TaskTypeKey = "task_type"
+	TasksDir    = "tasks"
+)
 
 type TaskContext struct {
 	Type    common.TaskType
@@ -67,7 +69,7 @@ func unmarshalTask(taskType string, param, paramOverride *[]byte, taskContext *T
 
 func loadTask(configDir, taskName string, paramOverride interface{}, taskContext *TaskContext) error {
 	var _paramOverride *[]byte = nil
-	taskConfigPath := filepath.Join(configDir, tasksDir, taskName+string(".yaml"))
+	taskConfigPath := filepath.Join(configDir, TasksDir, taskName+string(".yaml"))
 
 	if paramOverride != nil {
 		val, err := yaml.Marshal(paramOverride)
@@ -86,9 +88,9 @@ func loadTask(configDir, taskName string, paramOverride interface{}, taskContext
 	if err := yaml.Unmarshal(bytes, &data); err != nil {
 		return err
 	}
-	taskType, isExist := data[taskTypeKey]
+	taskType, isExist := data[TaskTypeKey]
 	if !isExist {
-		return fmt.Errorf("Entry [%s] does not exist", taskTypeKey)
+		return fmt.Errorf("Entry [%s] does not exist", TaskTypeKey)
 	}
 	return unmarshalTask(taskType.(string), &bytes, _paramOverride, taskContext)
 }

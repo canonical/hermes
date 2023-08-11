@@ -13,8 +13,12 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-const Disposable = "disposable"
-const Periodic = "periodic"
+const (
+	Disposable = "disposable"
+	Periodic   = "periodic"
+	Enabled    = "enabled"
+	Disabled   = "disabled"
+)
 
 type Routine struct {
 	Cond     map[string]interface{} `yaml:"condition"`
@@ -24,15 +28,16 @@ type Routine struct {
 }
 
 type Job struct {
-	Name       string
+	Name       string             `yaml:"-"`
 	Class      string             `yaml:"class"`
 	Interval   uint32             `yaml:"interval"`
+	Status     string             `yaml:"status"`
 	AptInstall []string           `yaml:"apt_install"`
 	Routines   map[string]Routine `yaml:"routines"`
 	Start      string             `yaml:"start"`
 }
 
-func getFileNameWithoutExtension(configPath string) string {
+func getFileNameWithoutExt(configPath string) string {
 	l := strings.LastIndexByte(configPath, '/') + 1
 	if r := strings.LastIndexByte(configPath, '.'); r != -1 {
 		return configPath[l:r]
@@ -43,7 +48,7 @@ func getFileNameWithoutExtension(configPath string) string {
 func NewJob(configPath string) (*Job, error) {
 	var job Job
 
-	job.Name = getFileNameWithoutExtension(configPath)
+	job.Name = getFileNameWithoutExt(configPath)
 	if _, err := os.Stat(configPath); err != nil {
 		return nil, err
 	}
@@ -57,6 +62,11 @@ func NewJob(configPath string) (*Job, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	if len(job.Status) == 0 || (job.Status != Enabled && job.Status != Disabled) {
+		job.Status = Enabled
+	}
+
 	for _, routine := range job.Routines {
 		if len(routine.Cond) > 1 || len(routine.Task) > 1 {
 			return nil, fmt.Errorf("Unexpected config format")

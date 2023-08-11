@@ -1,5 +1,6 @@
 class: periodic
 interval: 15
+status: enabled
 routines:
   memory_profile:
     condition:
