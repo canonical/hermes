@@ -138,6 +138,11 @@ func (jobQueue *JobQueue) addJob(job Job) error {
 			return err
 		}
 	}
+
+	if job.Status == Disabled {
+		return nil
+	}
+
 	jobQueue.jobProtos[job.Name] = job
 
 	if err := jobQueue.initJob(&job); err != nil {
@@ -155,6 +160,9 @@ func (jobQueue *JobQueue) modifyJob(job Job) error {
 		}
 	}
 
+	if job.Status == Disabled {
+		return nil
+	}
 	return jobQueue.addJob(job)
 }
 
