@@ -14,8 +14,15 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const (
+	SampleFreq   = "freq"
+	SamplePeriod = "period"
+)
+
 type ProfileContext struct {
-	Timeout uint32
+	Timeout      uint32 `yaml:"timeout"`
+	SamplingType string `yaml:"sampling_type"`
+	Sampling     uint64 `yaml:"sampling"`
 }
 
 type TaskProfileInstance struct{}
@@ -56,7 +63,11 @@ func (instance *TaskProfileInstance) Process(instContext interface{}, logDataPat
 		},
 	}
 	perf.TaskClock.SetAttr(&attr)
-	attr.SetSamplePeriod(1000)
+	if profileContext.SamplingType == SampleFreq {
+		attr.SetSampleFreq(profileContext.Sampling)
+	} else {
+		attr.SetSamplePeriod(profileContext.Sampling)
+	}
 	attr.SetWakeupEvents(1)
 
 	if synthesizeEvents, err := perf.NewSynthesizeEvents(logDataPathGenerator(".synth_events")); err != nil {

@@ -9,11 +9,11 @@ import (
 )
 
 type TraceContext struct {
-	Timeout         uint32
-	CurrentTracer   string
-	TraceOptions    []string
-	SetEvent        []string
-	SetFtraceFilter []string
+	Timeout         uint32   `yaml:"timeout"`
+	CurrentTracer   string   `yaml:"current_tracer"`
+	TraceOptions    []string `yaml:"trace_options"`
+	SetEvent        []string `yaml:"set_event"`
+	SetFtraceFilter []string `yaml:"set_ftrace_filter"`
 }
 
 type TaskTraceInstance struct {
