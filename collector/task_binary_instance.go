@@ -1,6 +1,7 @@
 package collector
 
 import (
+	"fmt"
 	"os"
 
 	"hermes/common"
@@ -9,6 +10,13 @@ import (
 
 type BinaryContext struct {
 	Cmds []string
+}
+
+func (context *BinaryContext) Check() error {
+	if len(context.Cmds) == 0 {
+		return fmt.Errorf("The cmds cannot be empty")
+	}
+	return nil
 }
 
 type TaskBinaryInstance struct{}

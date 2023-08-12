@@ -17,6 +17,10 @@ type CpuInfoContext struct {
 	Usage     uint64
 }
 
+func (context *CpuInfoContext) Check() error {
+	return nil
+}
+
 type TaskCpuInfoInstance struct{}
 
 func NewCpuInfoInstance(_ common.TaskType) (TaskInstance, error) {

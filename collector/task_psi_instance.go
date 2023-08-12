@@ -18,6 +18,19 @@ type PSIContext struct {
 	Full []float64
 }
 
+func (context *PSIContext) Check() error {
+	if !common.Contains([]utils.PSIType{utils.CpuPSI, utils.MemoryPSI, utils.IOPSI}, context.Type) {
+		return fmt.Errorf("Unrecognized type [%d]", context.Type)
+	}
+	if len(context.Some) != 3 {
+		return fmt.Errorf("The length of some entry is not three")
+	}
+	if len(context.Full) != 3 {
+		return fmt.Errorf("The length of full entry is not three")
+	}
+	return nil
+}
+
 type TaskPSIInstance struct{}
 
 func NewTaskPSIInstance(_ common.TaskType) (TaskInstance, error) {

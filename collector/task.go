@@ -20,7 +20,7 @@ const (
 
 type TaskContext struct {
 	Type    common.TaskType
-	Context interface{}
+	Context common.Context
 }
 
 type TaskInstance interface {
@@ -34,7 +34,7 @@ type Task struct {
 }
 
 func unmarshalTask(taskType string, param, paramOverride *[]byte, taskContext *TaskContext) error {
-	var context interface{}
+	var context common.Context
 	switch taskType {
 	case common.BinaryTask:
 		context = &BinaryContext{}
@@ -62,6 +62,11 @@ func unmarshalTask(taskType string, param, paramOverride *[]byte, taskContext *T
 			return err
 		}
 	}
+
+	if err := context.Check(); err != nil {
+		return err
+	}
+
 	taskContext.Context = context
 	taskContext.Type = common.TaskNameToType(taskType)
 	return nil

@@ -1,6 +1,7 @@
 package collector
 
 import (
+	"fmt"
 	"time"
 
 	"hermes/backend/ftrace"
@@ -14,6 +15,13 @@ type TraceContext struct {
 	TraceOptions    []string `yaml:"trace_options"`
 	SetEvent        []string `yaml:"set_event"`
 	SetFtraceFilter []string `yaml:"set_ftrace_filter"`
+}
+
+func (context *TraceContext) Check() error {
+	if context.Timeout == 0 {
+		return fmt.Errorf("The timeout cannot be zero")
+	}
+	return nil
 }
 
 type TaskTraceInstance struct {

@@ -2,6 +2,7 @@ package collector
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"sync"
 	"time"
@@ -23,6 +24,20 @@ type ProfileContext struct {
 	Timeout      uint32 `yaml:"timeout"`
 	SamplingType string `yaml:"sampling_type"`
 	Sampling     uint64 `yaml:"sampling"`
+}
+
+func (context *ProfileContext) Check() error {
+	if context.Timeout == 0 {
+		return fmt.Errorf("The timeout cannot be zero")
+	}
+	if !common.Contains([]string{SampleFreq, SamplePeriod}, context.SamplingType) {
+		return fmt.Errorf("Unrecognized sampling type [%s]", context.SamplingType)
+	}
+	if context.Sampling == 0 {
+		return fmt.Errorf("The sampling cannot be zero")
+	}
+	return nil
+
 }
 
 type TaskProfileInstance struct{}

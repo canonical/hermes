@@ -19,6 +19,10 @@ type MemoryInfoContext struct {
 	MemInfo    *utils.MemInfo
 }
 
+func (context *MemoryInfoContext) Check() error {
+	return nil
+}
+
 type TaskMemoryInfoInstance struct{}
 
 func NewMemoryInfoInstance(_ common.TaskType) (TaskInstance, error) {

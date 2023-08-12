@@ -19,3 +19,12 @@ func LoadEnv(metaDir string) error {
 	}
 	return nil
 }
+
+func Contains[T comparable](slices []T, val T) bool {
+	for _, _val := range slices {
+		if val == _val {
+			return true
+		}
+	}
+	return false
+}

@@ -2,6 +2,7 @@ package collector
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"hermes/backend/ebpf"
@@ -13,6 +14,13 @@ import (
 
 type EbpfContext struct {
 	Timeout uint32
+}
+
+func (context *EbpfContext) Check() error {
+	if context.Timeout == 0 {
+		return fmt.Errorf("The timeout cannot be zero")
+	}
+	return nil
 }
 
 type TaskEbpfInstance struct {

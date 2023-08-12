@@ -21,6 +21,10 @@ const CpuInfoTask = "cpu_info"
 const MemoryInfoTask = "memory_info"
 const MemoryEbpfTask = "memory_ebpf"
 
+type Context interface {
+	Check() error
+}
+
 func TaskNameToType(taskName string) TaskType {
 	mapper := map[string]TaskType{
 		BinaryTask:     Binary,
