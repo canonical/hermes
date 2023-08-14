@@ -18,7 +18,7 @@ export const FlamegraphPanel = ({
   timeRange,
   onChangeTimeRange,
 }: Props) => {
-  const [selectedOption, setSelectedOption] = useState<string>('');
+  const [selectedOption, setSelectedOption] = useState<number>(0);
   const [profile, setProfile] = useState<object>({});
   const dataAvailable = data?.series && data.series.length > 0;
   const profileAvailable = Object.keys(profile).length !== 0;
@@ -29,7 +29,7 @@ export const FlamegraphPanel = ({
     const date = new Date(timestamp)
     return date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds() + ", " + date.toDateString()
   }
-  const handleOptionChange = async (selected: string) => {
+  const handleOptionChange = async (selected: number) => {
     setSelectedOption(selected)
     const _profile = await datasource.getResource([options.group, options.routine, selected].join('/'))
     setProfile(_profile)
@@ -44,12 +44,12 @@ export const FlamegraphPanel = ({
   if (dataAvailable) {
     let len = data.series[0].length
     for (let i = 0; i < len; ++i) {
-      let timestamp = data.series[0].fields[0].values.get(i)
+      let timestamp = data.series[0].fields[0].values.get(i) as number
       let threshold = data.series[0].fields[1].values.get(i)
       let usage = data.series[1].fields[1].values.get(i)
       if (usage >= threshold) {
         dropdownOptions.push(
-          { label: timestampToStr(timestamp), value: timestamp }
+          { label: timestampToStr(timestamp), value: timestamp / 1000 }
         )
       }
     }
@@ -62,7 +62,7 @@ export const FlamegraphPanel = ({
           <Select
             options={dropdownOptions}
             value={selectedOption}
-            onChange={(option) => handleOptionChange(option.value as string)}
+            onChange={(option) => handleOptionChange(option.value as number)}
           />
           {
             profileAvailable ? (
