@@ -42,10 +42,17 @@ func _convertToFlamebearer(flamegraphs [][]*FlamegraphData, flamebearerData *Fla
 		parentLevel = flamebearerData.Levels[len(flamebearerData.Levels)-1]
 	}
 
+	var padding int64 = 0
 	for i, flamegraph := range flamegraphs {
+		if len(parentLevel) != 0 {
+			padding += parentLevel[i*4] + parentLevel[i*4+2]
+		}
 		for j, _flamegraph := range flamegraph {
-			__flamegraphs := []*FlamegraphData{}
+			if _flamegraph.Value == 0 {
+				continue
+			}
 
+			__flamegraphs := []*FlamegraphData{}
 			selfVal := _flamegraph.Value
 			for k, child := range _flamegraph.Children {
 				hasChild = true
@@ -59,8 +66,9 @@ func _convertToFlamebearer(flamegraphs [][]*FlamegraphData, flamebearerData *Fla
 			}
 
 			level := []int64{0, _flamegraph.Value, selfVal, int64(len(flamebearerData.Names) - 1)}
-			if j == 0 && len(parentLevel) != 0 {
-				level[0] = parentLevel[i*4] + parentLevel[i*4+2]
+			if padding != 0 {
+				level[0] = padding
+				padding = 0
 			}
 			levels = append(levels, level...)
 
@@ -92,7 +100,7 @@ func HandleResResp(resp []byte, status *int, respBody *[]byte) error {
 		Version: 1,
 		Metadata: Metadata{
 			Format:     "single",
-			SampleRate: 100,
+			SampleRate: 10,
 			Units:      "samples",
 			Name:       "cpu profile",
 			AppName:    "hermes.cpu_profile",
