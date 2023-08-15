@@ -18,9 +18,9 @@ local troubleshoot = import '_troubleshoot.libsonnet';
     new(routine)::
       grafana.dashboard.new(
         routine.title,
-        time_from='now-5m',
+        time_from='now-15m',
         time_to='now',
-        refresh='1s',
+        refresh='10s',
         timepicker=grafana.timepicker.new(
           refresh_intervals=['1s', '2s', '5s', '10s'],
         ),
