@@ -12,7 +12,7 @@ const (
 	thresFieldName = "Threshold"
 )
 
-func handleCpuProfileResp(response []byte) ([]*data.Frame, error) {
+func handleCpuProfileResp(startTime, endTime int64, response []byte) ([]*data.Frame, error) {
 	records := []CpuProfileRecord{}
 	if err := json.Unmarshal(response, &records); err != nil {
 		return nil, err
@@ -29,6 +29,9 @@ func handleCpuProfileResp(response []byte) ([]*data.Frame, error) {
 	valFrames := data.NewFrame("usage", timeField, valField)
 
 	for _, rec := range records {
+		if rec.Timestamp < startTime || rec.Timestamp > endTime {
+			continue
+		}
 		timeField.Append(time.Unix(rec.Timestamp, 0))
 		thresField.Append(rec.Threshold)
 		valField.Append(rec.Val)
@@ -36,8 +39,8 @@ func handleCpuProfileResp(response []byte) ([]*data.Frame, error) {
 	return []*data.Frame{thresFrames, valFrames}, nil
 }
 
-func HandleQueryResp(group, routine string, response []byte) ([]*data.Frame, error) {
-	handlers := map[string]map[string]func([]byte) ([]*data.Frame, error){
+func HandleQueryResp(group, routine string, startTime, endTime int64, response []byte) ([]*data.Frame, error) {
+	handlers := map[string]map[string]func(int64, int64, []byte) ([]*data.Frame, error){
 		"cpu": {
 			"cpu_profile": handleCpuProfileResp,
 		},
@@ -49,5 +52,5 @@ func HandleQueryResp(group, routine string, response []byte) ([]*data.Frame, err
 	if !isExist {
 		return nil, fmt.Errorf("Cannot find a handler for group %s, routine %s", group, routine)
 	}
-	return handler(response)
+	return handler(startTime, endTime, response)
 }

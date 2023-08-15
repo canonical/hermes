@@ -53,15 +53,17 @@ func (ds *Datasource) QueryData(ctx context.Context, req *backend.QueryDataReque
 			res.Error = err
 			response.Responses[q.RefID] = res
 		}()
-
 		if query, err := ParseQuery(q); err != nil {
 			log.DefaultLogger.Error("query data: failed to parse query", "err", err)
 		} else if urlPath, err := url.JoinPath(ds.settings.URL, query.Group, query.Routine); err != nil {
 			log.DefaultLogger.Error("query data: failed to join path", "err", err)
 		} else {
+			interval := int64(q.Interval.Seconds())
+			startTime := q.TimeRange.From.Unix() - interval
+			endTime := q.TimeRange.To.Unix() + interval
 			if resp, err := ds.query(ctx, urlPath); err != nil {
 				log.DefaultLogger.Error("query data: failed to query", "err", err)
-			} else if frames, err := HandleQueryResp(query.Group, query.Routine, resp); err != nil {
+			} else if frames, err := HandleQueryResp(query.Group, query.Routine, startTime, endTime, resp); err != nil {
 				log.DefaultLogger.Error("query data: failed to handle resp", "err", err)
 			} else {
 				res.Frames = append(res.Frames, frames...)
