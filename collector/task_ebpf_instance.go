@@ -16,11 +16,18 @@ type EbpfContext struct {
 	Timeout uint32
 }
 
-func (context *EbpfContext) Check() error {
+func (context *EbpfContext) check() error {
 	if context.Timeout == 0 {
 		return fmt.Errorf("The timeout cannot be zero")
 	}
 	return nil
+}
+
+func (context *EbpfContext) Fill(param, paramOverride *[]byte) error {
+	if err := common.FillContext(param, paramOverride, context); err != nil {
+		return err
+	}
+	return context.check()
 }
 
 type TaskEbpfInstance struct {

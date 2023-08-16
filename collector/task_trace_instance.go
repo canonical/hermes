@@ -17,11 +17,18 @@ type TraceContext struct {
 	SetFtraceFilter []string `yaml:"set_ftrace_filter"`
 }
 
-func (context *TraceContext) Check() error {
+func (context *TraceContext) check() error {
 	if context.Timeout == 0 {
 		return fmt.Errorf("The timeout cannot be zero")
 	}
 	return nil
+}
+
+func (context *TraceContext) Fill(param, paramOverride *[]byte) error {
+	if err := common.FillContext(param, paramOverride, context); err != nil {
+		return err
+	}
+	return context.check()
 }
 
 type TaskTraceInstance struct {

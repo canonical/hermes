@@ -26,7 +26,7 @@ type ProfileContext struct {
 	Sampling     uint64 `yaml:"sampling"`
 }
 
-func (context *ProfileContext) Check() error {
+func (context *ProfileContext) check() error {
 	if context.Timeout == 0 {
 		return fmt.Errorf("The timeout cannot be zero")
 	}
@@ -37,7 +37,13 @@ func (context *ProfileContext) Check() error {
 		return fmt.Errorf("The sampling cannot be zero")
 	}
 	return nil
+}
 
+func (context *ProfileContext) Fill(param, paramOverride *[]byte) error {
+	if err := common.FillContext(param, paramOverride, context); err != nil {
+		return err
+	}
+	return context.check()
 }
 
 type TaskProfileInstance struct{}

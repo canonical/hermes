@@ -17,8 +17,8 @@ type CpuInfoContext struct {
 	Usage     uint64
 }
 
-func (context *CpuInfoContext) Check() error {
-	return nil
+func (context *CpuInfoContext) Fill(param, paramOverride *[]byte) error {
+	return common.FillContext(param, paramOverride, context)
 }
 
 type TaskCpuInfoInstance struct{}

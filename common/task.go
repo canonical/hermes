@@ -1,5 +1,9 @@
 package common
 
+import (
+	"gopkg.in/yaml.v2"
+)
+
 type TaskType uint32
 
 const (
@@ -13,16 +17,32 @@ const (
 	MemoryInfo
 )
 
-const PSITask = "psi"
-const TraceTask = "trace"
-const BinaryTask = "binary"
-const ProfileTask = "profile"
-const CpuInfoTask = "cpu_info"
-const MemoryInfoTask = "memory_info"
-const MemoryEbpfTask = "memory_ebpf"
+const (
+	PSITask        = "psi"
+	TraceTask      = "trace"
+	BinaryTask     = "binary"
+	ProfileTask    = "profile"
+	CpuInfoTask    = "cpu_info"
+	MemoryInfoTask = "memory_info"
+	MemoryEbpfTask = "memory_ebpf"
+)
 
 type Context interface {
-	Check() error
+	Fill(param, paramOverride *[]byte) error
+}
+
+func FillContext(param, paramOverride *[]byte, context Context) error {
+	if param != nil {
+		if err := yaml.Unmarshal(*param, context); err != nil {
+			return err
+		}
+	}
+	if paramOverride != nil {
+		if err := yaml.Unmarshal(*paramOverride, context); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func TaskNameToType(taskName string) TaskType {

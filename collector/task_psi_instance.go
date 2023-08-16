@@ -18,7 +18,7 @@ type PSIContext struct {
 	Full []float64
 }
 
-func (context *PSIContext) Check() error {
+func (context *PSIContext) check() error {
 	if !common.Contains([]utils.PSIType{utils.CpuPSI, utils.MemoryPSI, utils.IOPSI}, context.Type) {
 		return fmt.Errorf("Unrecognized type [%d]", context.Type)
 	}
@@ -29,6 +29,13 @@ func (context *PSIContext) Check() error {
 		return fmt.Errorf("The length of full entry is not three")
 	}
 	return nil
+}
+
+func (context *PSIContext) Fill(param, paramOverride *[]byte) error {
+	if err := common.FillContext(param, paramOverride, context); err != nil {
+		return err
+	}
+	return context.check()
 }
 
 type TaskPSIInstance struct{}

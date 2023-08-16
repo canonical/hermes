@@ -12,11 +12,18 @@ type BinaryContext struct {
 	Cmds []string
 }
 
-func (context *BinaryContext) Check() error {
+func (context *BinaryContext) check() error {
 	if len(context.Cmds) == 0 {
 		return fmt.Errorf("The cmds cannot be empty")
 	}
 	return nil
+}
+
+func (context *BinaryContext) Fill(param, paramOverride *[]byte) error {
+	if err := common.FillContext(param, paramOverride, context); err != nil {
+		return err
+	}
+	return context.check()
 }
 
 type TaskBinaryInstance struct{}

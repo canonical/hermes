@@ -19,8 +19,8 @@ type MemoryInfoContext struct {
 	MemInfo    *utils.MemInfo
 }
 
-func (context *MemoryInfoContext) Check() error {
-	return nil
+func (context *MemoryInfoContext) Fill(param, paramOverride *[]byte) error {
+	return common.FillContext(param, paramOverride, context)
 }
 
 type TaskMemoryInfoInstance struct{}

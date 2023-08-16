@@ -52,18 +52,7 @@ func unmarshalTask(taskType string, param, paramOverride *[]byte, taskContext *T
 		context = &MemoryInfoContext{}
 	}
 
-	if param != nil {
-		if err := yaml.Unmarshal(*param, context); err != nil {
-			return err
-		}
-	}
-	if paramOverride != nil {
-		if err := yaml.Unmarshal(*paramOverride, context); err != nil {
-			return err
-		}
-	}
-
-	if err := context.Check(); err != nil {
+	if err := context.Fill(param, paramOverride); err != nil {
 		return err
 	}
 
