@@ -65,7 +65,7 @@ func (instance *TaskMemoryInfoInstance) writeToFile(context *MemoryInfoContext, 
 	return nil
 }
 
-func (instance *TaskMemoryInfoInstance) GetLogDataPathPostfix() string {
+func (instance *TaskMemoryInfoInstance) GetLogDataPathPostfix(instContext interface{}) string {
 	return ".meminfo"
 }
 

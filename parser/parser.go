@@ -9,6 +9,11 @@ import (
 	"hermes/log"
 )
 
+const (
+	CpuProfileJob     = "cpu_profile"
+	MemleakProfileJob = "memleak_profile"
+)
+
 type ParserInstance interface {
 	Parse(logDataPathGenerator log.LogDataPathGenerator, timestamp int64, logDataPostfix, outputDir string) error
 }
@@ -29,15 +34,24 @@ func NewParser(logDir, outputDir string, timestamp int64, logMeta log.LogMetadat
 	}, nil
 }
 
-func (parser *Parser) GetTaskParser(taskType common.TaskType) (ParserInstance, error) {
-	parserGetMapping := map[common.TaskType]func() (ParserInstance, error){
-		common.CpuInfo:    GetCpuInfoParser,
-		common.MemoryInfo: GetMemoryInfoParser,
-		common.Profile:    GetCpuProfileParser,
-		common.MemoryEbpf: GetMemoryAllocEbpfParser,
+func (parser *Parser) getTaskParser(jobName string, taskType common.TaskType) (ParserInstance, error) {
+	parserGetMapping := map[string]map[common.TaskType]func() (ParserInstance, error){
+		CpuProfileJob: {
+			common.CpuInfo: GetCpuInfoParser,
+			common.Profile: GetCpuProfileParser,
+		},
+		MemleakProfileJob: {
+			common.MemoryInfo: GetMemoryInfoParser,
+			common.Ebpf:       GetMemoryAllocEbpfParser,
+		},
 	}
 
-	getParser, isExist := parserGetMapping[taskType]
+	taskMapping, isExist := parserGetMapping[jobName]
+	if !isExist {
+		return nil, fmt.Errorf("Unhandled job name [%s]", jobName)
+	}
+
+	getParser, isExist := taskMapping[taskType]
 	if !isExist {
 		return nil, fmt.Errorf("Unhandled task type [%d]", taskType)
 	}
@@ -47,7 +61,7 @@ func (parser *Parser) GetTaskParser(taskType common.TaskType) (ParserInstance, e
 func (parser *Parser) Parse() error {
 	for _, meta := range parser.logMeta.Metadatas {
 		logDataPathGenerator := log.GetLogDataPathGenerator(parser.logDir, parser.logMeta.LogDataLabel)
-		instance, err := parser.GetTaskParser(common.TaskType(meta.TaskType))
+		instance, err := parser.getTaskParser(parser.logMeta.JobName, common.TaskType(meta.TaskType))
 		if err != nil {
 			return err
 		}
@@ -56,12 +70,7 @@ func (parser *Parser) Parse() error {
 			return nil
 		}
 
-		category := common.TaskTypeToParserCategory(common.TaskType(meta.TaskType))
-		if category == "" {
-			return fmt.Errorf("Failed to parse task type [%d] to task name", meta.TaskType)
-		}
-
-		outputDir := filepath.Join(parser.outputDir, category)
+		outputDir := filepath.Join(parser.outputDir, parser.logMeta.JobName)
 		if err := os.MkdirAll(outputDir, os.ModePerm); err != nil {
 			return err
 		}

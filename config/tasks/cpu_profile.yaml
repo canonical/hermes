@@ -1,4 +1,4 @@
 task_type: profile
 timeout: 10
 sampling_type: freq
-sampling: 99 
+sampling: 99

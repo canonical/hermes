@@ -4,7 +4,7 @@ import FlameGraph from './flamegraph'
 import "../css/overview.scss"
 
 const GROUP = 'memory'
-const ROUTINE = 'memory_ebpf'
+const ROUTINE = 'memleak_profile'
 
 const Axis = ({ orient, translate, scale, cssClass, tickFormat }) => {
   let axisElement
@@ -155,7 +155,7 @@ const MemoryViewChart = ({ margins, dimensions, data, flameGraphHandler, hasFlam
   )
 }
 
-const MemoryEbpfView = () => {
+const MemleakProfileView = () => {
   const [data, setData] = useState()
   const [flameGraphData, setFlameGraphData] = useState()
   const hasFlameGraphData = () => {
@@ -188,4 +188,4 @@ const MemoryEbpfView = () => {
   )
 }
 
-export default MemoryEbpfView
+export default MemleakProfileView

@@ -6,5 +6,5 @@ routines:
     condition:
       memory_info: null
     content:
-      memory_ebpf: null
+      memleak_profile: null
 start: memory_profile

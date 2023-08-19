@@ -4,10 +4,13 @@ import (
 	"context"
 	"fmt"
 
-	"hermes/common"
 	"hermes/log"
 
 	memory "hermes/backend/ebpf/memory_alloc"
+)
+
+const (
+	MemoryEbpf = "memory"
 )
 
 type Loader interface {
@@ -17,11 +20,10 @@ type Loader interface {
 	Close()
 }
 
-func GetLoader(taskType common.TaskType) (Loader, error) {
-	switch taskType {
-	case common.MemoryEbpf:
+func GetLoader(ebpfType string) (Loader, error) {
+	switch ebpfType {
+	case MemoryEbpf:
 		return memory.GetLoader()
 	}
-
-	return nil, fmt.Errorf("Unahndled task type [%d]", taskType)
+	return nil, fmt.Errorf("Unahndled ebpf type [%s]", ebpfType)
 }

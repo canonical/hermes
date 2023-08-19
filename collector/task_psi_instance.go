@@ -78,7 +78,7 @@ func (instance *TaskPSIInstance) ToFile(psiResult *utils.PSIResult, logDataPath 
 	return nil
 }
 
-func (instance *TaskPSIInstance) GetLogDataPathPostfix() string {
+func (instance *TaskPSIInstance) GetLogDataPathPostfix(instContext interface{}) string {
 	return ".psi"
 }
 

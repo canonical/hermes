@@ -50,6 +50,7 @@ func NewJobRunner(configDir, logDir, storEngine string) (*JobRunner, error) {
 
 func (runner *JobRunner) newJob(job Job) {
 	logMeta := log.LogMetadata{
+		JobName:      job.Name,
 		LogDataLabel: uuid.NewString(),
 	}
 	timestamp := time.Now().Unix()

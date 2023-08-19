@@ -45,7 +45,7 @@ func NewTaskTraceInstance(_ common.TaskType) (TaskInstance, error) {
 		ftrace: ftrace}, nil
 }
 
-func (instance *TaskTraceInstance) GetLogDataPathPostfix() string {
+func (instance *TaskTraceInstance) GetLogDataPathPostfix(instContext interface{}) string {
 	return ".trace"
 }
 

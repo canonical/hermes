@@ -1,13 +1,14 @@
 package log
 
 type Metadata struct {
-	TaskType       int
-	LogDataPostfix string
+	TaskType       int    `yaml:"task_type"`
+	LogDataPostfix string `yaml:"log_data_postfix"`
 }
 
 type LogMetadata struct {
-	LogDataLabel string
-	Metadatas    []Metadata
+	JobName      string     `yaml:"job_name"`
+	LogDataLabel string     `yaml:"log_datalabel"`
+	Metadatas    []Metadata `yaml:"metadatas"`
 }
 
 type LogMetaPubFormat struct {

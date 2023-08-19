@@ -52,7 +52,7 @@ func NewTaskProfileInstance(_ common.TaskType) (TaskInstance, error) {
 	return &TaskProfileInstance{}, nil
 }
 
-func (instance *TaskProfileInstance) GetLogDataPathPostfix() string {
+func (instance *TaskProfileInstance) GetLogDataPathPostfix(instContext interface{}) string {
 	return ".cpu_*"
 }
 

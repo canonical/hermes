@@ -11,7 +11,7 @@ const (
 	Binary
 	Trace
 	Profile
-	MemoryEbpf
+	Ebpf
 	PSI
 	CpuInfo
 	MemoryInfo
@@ -24,7 +24,7 @@ const (
 	ProfileTask    = "profile"
 	CpuInfoTask    = "cpu_info"
 	MemoryInfoTask = "memory_info"
-	MemoryEbpfTask = "memory_ebpf"
+	EbpfTask       = "ebpf"
 )
 
 type Context interface {
@@ -50,7 +50,7 @@ func TaskNameToType(taskName string) TaskType {
 		BinaryTask:     Binary,
 		TraceTask:      Trace,
 		ProfileTask:    Profile,
-		MemoryEbpfTask: MemoryEbpf,
+		EbpfTask:       Ebpf,
 		PSITask:        PSI,
 		CpuInfoTask:    CpuInfo,
 		MemoryInfoTask: MemoryInfo,
@@ -61,14 +61,4 @@ func TaskNameToType(taskName string) TaskType {
 		return None
 	}
 	return taskType
-}
-
-func TaskTypeToParserCategory(taskType TaskType) string {
-	switch taskType {
-	case CpuInfo, Profile:
-		return "cpu_profile"
-	case MemoryInfo, MemoryEbpf:
-		return "memory_ebpf"
-	}
-	return ""
 }

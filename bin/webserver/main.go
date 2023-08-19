@@ -73,13 +73,13 @@ func main() {
 
 	mem := router.Group("/memory")
 	{
-		mem.GET("/memory_ebpf", func(ctx *gin.Context) {
-			path := filepath.Join(viewDir, "memory_ebpf", "overview")
+		mem.GET("/memleak_profile", func(ctx *gin.Context) {
+			path := filepath.Join(viewDir, "memleak_profile", "overview")
 			ctx.File(path)
 		})
-		mem.GET("/memory_ebpf/:timestamp", func(ctx *gin.Context) {
+		mem.GET("/memleak_profile/:timestamp", func(ctx *gin.Context) {
 			timestamp := ctx.Param("timestamp")
-			path := filepath.Join(viewDir, "memory_ebpf", timestamp, "slab.stack.json")
+			path := filepath.Join(viewDir, "memleak_profile", timestamp, "slab.stack.json")
 			ctx.File(path)
 		})
 	}

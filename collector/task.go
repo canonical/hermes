@@ -24,7 +24,7 @@ type TaskContext struct {
 }
 
 type TaskInstance interface {
-	GetLogDataPathPostfix() string
+	GetLogDataPathPostfix(context interface{}) string
 	Process(context interface{}, logDataPathGenerator log.LogDataPathGenerator, result chan error)
 }
 
@@ -42,7 +42,7 @@ func unmarshalTask(taskType string, param, paramOverride *[]byte, taskContext *T
 		context = &TraceContext{}
 	case common.ProfileTask:
 		context = &ProfileContext{}
-	case common.MemoryEbpfTask:
+	case common.EbpfTask:
 		context = &EbpfContext{}
 	case common.PSITask:
 		context = &PSIContext{}
@@ -113,7 +113,7 @@ func (task *Task) getInstance(taskType common.TaskType) (TaskInstance, error) {
 		common.Binary:     NewTaskBinaryInstance,
 		common.Trace:      NewTaskTraceInstance,
 		common.Profile:    NewTaskProfileInstance,
-		common.MemoryEbpf: NewTaskEbpfInstance,
+		common.Ebpf:       NewTaskEbpfInstance,
 		common.PSI:        NewTaskPSIInstance,
 		common.CpuInfo:    NewCpuInfoInstance,
 		common.MemoryInfo: NewMemoryInfoInstance,
@@ -142,7 +142,7 @@ func (task *Task) GetCondLogDataPathPostfix() string {
 	if err != nil {
 		return "*"
 	}
-	return ".cond" + instance.GetLogDataPathPostfix()
+	return ".cond" + instance.GetLogDataPathPostfix(task.Cond.Context)
 }
 
 func (task *Task) Condition(logDir, logDataLabel string) error {
@@ -160,7 +160,7 @@ func (task *Task) GetTaskLogDataPathPostfix() string {
 	if err != nil {
 		return "*"
 	}
-	return ".task" + instance.GetLogDataPathPostfix()
+	return ".task" + instance.GetLogDataPathPostfix(task.Task.Context)
 }
 
 func (task *Task) Process(logDir, logDataLabel string, errChan chan error) {

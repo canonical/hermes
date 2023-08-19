@@ -32,7 +32,7 @@ func NewTaskBinaryInstance(_ common.TaskType) (TaskInstance, error) {
 	return &TaskBinaryInstance{}, nil
 }
 
-func (instance *TaskBinaryInstance) GetLogDataPathPostfix() string {
+func (instance *TaskBinaryInstance) GetLogDataPathPostfix(instContext interface{}) string {
 	return ".binary"
 }
 

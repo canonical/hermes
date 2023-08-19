@@ -48,7 +48,7 @@ func (instance *TaskCpuInfoInstance) writeToFile(context *CpuInfoContext, path s
 	return nil
 }
 
-func (instance *TaskCpuInfoInstance) GetLogDataPathPostfix() string {
+func (instance *TaskCpuInfoInstance) GetLogDataPathPostfix(instContext interface{}) string {
 	return ".cpuinfo"
 }
 

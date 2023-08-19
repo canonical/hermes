@@ -4,7 +4,7 @@ import styled from 'styled-components'
 import axios from 'axios'
 import schema from '../../schema_pb'
 import CpuProfileView from './cpu_profile_view'
-import MemoryEbpfView from './memory_ebpf_view'
+import MemleakProfileView from './memleak_profile_view'
 
 const Tab = styled.button`
   font-size: 20px;
@@ -30,8 +30,8 @@ const TabContent = ({ routine }) => {
   switch (routine) {
     case 'cpu_profile':
       return <CpuProfileView />
-    case 'memory_ebpf':
-      return <MemoryEbpfView />
+    case 'memleak_profile':
+      return <MemleakProfileView />
   }
   return null
 }
@@ -49,8 +49,8 @@ const TabGroup = () => {
     switch (routine) {
       case 'cpu_profile':
         return "CPU Profile"
-      case 'memory_ebpf':
-        return "Memory Ebpf"
+      case 'memleak_profile':
+        return "Memleak Profile"
     }
     return ""
   }
