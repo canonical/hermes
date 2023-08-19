@@ -13,6 +13,7 @@ type CpuInfoRecord struct {
 	Timestamp int64  `json:"timestamp"`
 	Threshold uint64 `json:"threshold"`
 	Val       uint64 `json:"val"`
+	Triggered bool   `json:"triggered"`
 }
 
 type CpuInfoParser struct{}
@@ -35,6 +36,7 @@ func (parser *CpuInfoParser) getCpuInfoRecord(timestamp int64, path string) (*Cp
 		Timestamp: timestamp,
 		Threshold: context.Threshold,
 		Val:       context.Usage,
+		Triggered: context.Triggered,
 	}, nil
 }
 

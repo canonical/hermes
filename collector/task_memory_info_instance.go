@@ -17,6 +17,7 @@ const MemTotal = "MemTotal"
 type MemoryInfoContext struct {
 	Thresholds map[string]int64
 	MemInfo    *utils.MemInfo
+	Triggered  bool
 }
 
 func (context *MemoryInfoContext) Fill(param, paramOverride *[]byte) error {
@@ -82,7 +83,8 @@ func (instance *TaskMemoryInfoInstance) Process(instContext interface{}, logData
 		return
 	}
 
-	if instance.isBeyondExpectation(memoryInfoContext) {
+	memoryInfoContext.Triggered = instance.isBeyondExpectation(memoryInfoContext)
+	if memoryInfoContext.Triggered {
 		err = nil
 	} else {
 		err = fmt.Errorf("MemInfo value does not exceed thresholds")

@@ -17,6 +17,7 @@ type MemoryInfoRecord struct {
 	Timestamp int64 `json:"timestamp"`
 	Threshold int64 `json:"threshold"`
 	Val       int64 `json:"val"`
+	Triggered bool  `json:"triggered"`
 }
 
 type MemoryInfoParser struct{}
@@ -55,6 +56,7 @@ func (parser *MemoryInfoParser) getMemoryInfoRecord(timestamp int64, path string
 		Timestamp: timestamp,
 		Threshold: memTotal * percent / 100,
 		Val:       memFree,
+		Triggered: context.Triggered,
 	}, nil
 }
 

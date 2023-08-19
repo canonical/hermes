@@ -15,6 +15,7 @@ import (
 type CpuInfoContext struct {
 	Threshold uint64
 	Usage     uint64
+	Triggered bool
 }
 
 func (context *CpuInfoContext) Fill(param, paramOverride *[]byte) error {
@@ -64,7 +65,9 @@ func (instance *TaskCpuInfoInstance) Process(instContext interface{}, logDataPat
 		logrus.Errorf("Failed to get cpu usage, set zero as default value")
 		cpuInfoContext.Usage = 0
 	}
-	if instance.isBeyondExpectation(cpuInfoContext) {
+
+	cpuInfoContext.Triggered = instance.isBeyondExpectation(cpuInfoContext)
+	if cpuInfoContext.Triggered {
 		err = nil
 	} else {
 		err = fmt.Errorf("CpuInfo value does not exceed threshold")
