@@ -6,9 +6,9 @@ type Metadata struct {
 }
 
 type LogMetadata struct {
-	JobName      string     `yaml:"job_name"`
-	LogDataLabel string     `yaml:"log_datalabel"`
-	Metadatas    []Metadata `yaml:"metadatas"`
+	JobName   string     `yaml:"job_name"`
+	DataLabel string     `yaml:"data_label"`
+	Metadatas []Metadata `yaml:"metadatas"`
 }
 
 type LogMetaPubFormat struct {

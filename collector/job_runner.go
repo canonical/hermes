@@ -50,8 +50,8 @@ func NewJobRunner(configDir, logDir, storEngine string) (*JobRunner, error) {
 
 func (runner *JobRunner) newJob(job Job) {
 	logMeta := log.LogMetadata{
-		JobName:      job.Name,
-		LogDataLabel: uuid.NewString(),
+		JobName:   job.Name,
+		DataLabel: uuid.NewString(),
 	}
 	timestamp := time.Now().Unix()
 	runner.jobsInProcess.Store(job.Name, timestamp)
@@ -72,7 +72,7 @@ func (runner *JobRunner) newJob(job Job) {
 			return
 		}
 
-		err = task.Condition(runner.logDir, logMeta.LogDataLabel)
+		err = task.Condition(runner.logDir, logMeta.DataLabel)
 		logMeta.AddMetadata(log.Metadata{
 			TaskType:       int(task.Cond.Type),
 			LogDataPostfix: task.GetCondLogDataPathPostfix(),
@@ -83,7 +83,7 @@ func (runner *JobRunner) newJob(job Job) {
 		}
 
 		errChan := make(chan error)
-		task.Process(runner.logDir, logMeta.LogDataLabel, errChan)
+		task.Process(runner.logDir, logMeta.DataLabel, errChan)
 		select {
 		case <-runner.quit:
 			return

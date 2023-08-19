@@ -60,7 +60,7 @@ func (parser *Parser) getTaskParser(jobName string, taskType common.TaskType) (P
 
 func (parser *Parser) Parse() error {
 	for _, meta := range parser.logMeta.Metadatas {
-		logDataPathGenerator := log.GetLogDataPathGenerator(parser.logDir, parser.logMeta.LogDataLabel)
+		logDataPathGenerator := log.GetLogDataPathGenerator(parser.logDir, parser.logMeta.DataLabel)
 		instance, err := parser.getTaskParser(parser.logMeta.JobName, common.TaskType(meta.TaskType))
 		if err != nil {
 			return err
