@@ -71,7 +71,7 @@ const TabGroup = () => {
             active={active === routine}
             onClick={() => setActive(routine)}
           >
-            tabTitle(routine)
+            {tabTitle(routine)}
           </Tab>
         ))}
       </ButtonGroup>
