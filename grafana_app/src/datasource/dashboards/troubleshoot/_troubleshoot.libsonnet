@@ -8,6 +8,11 @@ local troubleshoot = import '_troubleshoot.libsonnet';
       title: 'CPU Profile',
       target: {refId: 'A', group: 'cpu', routine: 'cpu_profile'},
     },
+    {
+      id: 'hermes-memleak-profile',
+      title: 'Memleak Profile',
+      target: {refId: 'A', group: 'memory', routine: 'memleak_profile'},
+    },
   ],
 
   getRoutineByID(id)::

@@ -20,8 +20,9 @@ func ParseQuery(query backend.DataQuery) (Query, error) {
 	return _query, nil
 }
 
-type CpuProfileRecord struct {
+type ProfileRecord struct {
 	Timestamp int64  `json:"timestamp"`
 	Threshold uint64 `json:"threshold"`
 	Val       uint64 `json:"val"`
+	Triggered bool   `json:"triggered"`
 }

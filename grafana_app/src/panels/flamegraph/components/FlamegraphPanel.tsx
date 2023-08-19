@@ -45,9 +45,8 @@ export const FlamegraphPanel = ({
     let len = data.series[0].length
     for (let i = 0; i < len; ++i) {
       let timestamp = data.series[0].fields[0].values.get(i) as number
-      let threshold = data.series[0].fields[1].values.get(i)
-      let usage = data.series[1].fields[1].values.get(i)
-      if (usage >= threshold) {
+      let triggered = data.series[2].fields[1].values.get(i) as boolean
+      if (triggered) {
         dropdownOptions.push(
           { label: timestampToStr(timestamp), value: timestamp / 1000 }
         )

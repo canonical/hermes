@@ -28,6 +28,11 @@
       "type": "dashboard",
       "name": "Hermes CPU Profile",
       "path": "dashboards/troubleshoot/hermes-cpu-profile.json"
+    },
+    {
+      "type": "dashboard",
+      "name": "Hermes Memleak Profile",
+      "path": "dashboards/troubleshoot/hermes-memleak-profile.json"
     }
   ],
   "dependencies": {
