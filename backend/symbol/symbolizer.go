@@ -17,7 +17,7 @@ func NewSymbolizer() (*Symbolizer, error) {
 }
 
 func (symbolizer *Symbolizer) Symbolize(addr uint64) (string, error) {
-	var symbol string = "unknown"
+	var symbol string = "[unknown]"
 	var err error
 	mapOffset := uint64(0xFFFF800000000000)
 	if addr&mapOffset == mapOffset {
@@ -26,7 +26,6 @@ func (symbolizer *Symbolizer) Symbolize(addr uint64) (string, error) {
 			logrus.Errorf("Failed to resolve symbol, err [%s]", err)
 			return "", err
 		}
-
 	}
 	return symbol, nil
 }
