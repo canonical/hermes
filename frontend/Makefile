@@ -5,7 +5,7 @@ RMDIR := rm -rf
 MKDIRP := mkdir -p
 CPDIR := cp -r
 SRC_FRONTEND_DIR := ./build/
-DST_FRONTEND_DIR := $(if $(DESTDIR),$(DESTDIR),$(HOME))/frontend/
+DST_FRONTEND_DIR := $(if $(DESTDIR),$(DESTDIR),$(HOME))/hermes/frontend/
 
 all: clean build
 

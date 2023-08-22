@@ -39,6 +39,9 @@ endif
 ifeq ($(shell dpkg -s protobuf-compiler 2> /dev/null; echo $$?), 1)
 	apt install -y protobuf-compiler
 endif
+ifeq ($(shell dpkg -s pkg-config 2> /dev/null; echo $$?), 1)
+	apt install -y pkg-config
+endif
 ifeq ($(shell dpkg -s libczmq-dev 2> /dev/null; echo $$?), 1)
 	apt install -y libczmq-dev
 endif
@@ -57,10 +60,10 @@ backend: generate
 	make -C $(PROTO_DIR) build
 	go build -ldflags "-X main.metadataDir=$(METADATA_DIR)" -o $(INSTALL_DIR) ./...
 
-ui:
+ui: auto_install
 	make -C $(FRONTEND_DIR) build
 
-grafana:
+grafana: auto_install
 	make -C $(GRAFANA_DIR) build
 
 install: install_bin install_ui
