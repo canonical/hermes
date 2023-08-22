@@ -1,11 +1,14 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	"io/ioutil"
 	"path/filepath"
 	"strings"
 
 	"hermes/collector"
+	"hermes/common"
 
 	"github.com/rivo/tview"
 	"github.com/sirupsen/logrus"
@@ -14,7 +17,18 @@ import (
 
 var (
 	metadataDir string
+	configDir   string
 )
+
+func init() {
+	flag.StringVar(&configDir, "config_dir", metadataDir+common.ConfigDirDefault, "The path of config directory")
+	flag.Usage = Usage
+}
+
+func Usage() {
+	fmt.Println("Usage: job-config [config_dir]")
+	flag.PrintDefaults()
+}
 
 func TrimFileNameExt(name string) string {
 	return strings.TrimSuffix(name, filepath.Ext(name))
@@ -44,7 +58,9 @@ func updateJobStatus(filePath, status string) error {
 func main() {
 	app := tview.NewApplication()
 	form := tview.NewForm()
-	configDir := metadataDir + "/config/"
+
+	flag.Parse()
+
 	files, err := ioutil.ReadDir(configDir)
 	if err != nil {
 		logrus.Fatal(err)

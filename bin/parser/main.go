@@ -36,8 +36,8 @@ func init() {
 		logrus.Fatal(err)
 	}
 
-	flag.StringVar(&logDir, "log_dir", "/var/log/collector", "The path of log directory")
-	flag.StringVar(&outputDir, "output_dir", homeDir+string("/view"), "The path of view directory")
+	flag.StringVar(&logDir, "log_dir", common.LogDirDefault, "The path of log directory")
+	flag.StringVar(&outputDir, "output_dir", homeDir+common.ViewDirDefault, "The path of view directory")
 	flag.StringVar(&storEngine, "storage_engine", "file", "The storage engine (file)")
 	flag.StringVar(&mode, "mode", "oneshot", "Mode (oneshot|daemon)")
 	flag.Usage = Usage

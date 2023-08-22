@@ -15,18 +15,20 @@ import (
 
 var (
 	metadataDir string
+	configDir   string
 	logDir      string
 	storEngine  string
 )
 
 func init() {
-	flag.StringVar(&logDir, "log_dir", "/var/log/collector/", "The path of log directory")
+	flag.StringVar(&configDir, "config_dir", metadataDir+common.ConfigDirDefault, "The path of config directory")
+	flag.StringVar(&logDir, "log_dir", common.LogDirDefault, "The path of log directory")
 	flag.StringVar(&storEngine, "storage_engine", "file", "The storage engine")
 	flag.Usage = Usage
 }
 
 func Usage() {
-	fmt.Println("Usage: collector [output_dir] [storage_engine]")
+	fmt.Println("Usage: collector [config_dir] [log_dir] [storage_engine]")
 	flag.PrintDefaults()
 }
 
@@ -35,8 +37,6 @@ func main() {
 	defer stop()
 
 	flag.Parse()
-
-	configDir := metadataDir + "/config/"
 
 	err := common.LoadEnv(metadataDir)
 	if err != nil {

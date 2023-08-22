@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"hermes/common"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -14,6 +15,7 @@ import (
 var contentParser *ContentParser
 
 var (
+	metadataDir string
 	frontendDir string
 	viewDir     string
 )
@@ -24,8 +26,8 @@ func init() {
 		logrus.Fatal(err)
 	}
 
-	flag.StringVar(&frontendDir, "frontend_dir", homeDir+string("/frontend"), "The path of frontend directory")
-	flag.StringVar(&viewDir, "view_dir", homeDir+string("/view"), "The path of view directory")
+	flag.StringVar(&frontendDir, "frontend_dir", metadataDir+common.FrontendDirDefault, "The path of frontend directory")
+	flag.StringVar(&viewDir, "view_dir", homeDir+common.ViewDirDefault, "The path of view directory")
 	flag.Usage = usage
 }
 
