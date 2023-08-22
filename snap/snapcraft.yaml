@@ -9,12 +9,20 @@ grade: devel
 confinement: classic
 apps:
   collector:
-    command: usr/sbin/collector --config_dir $SNAP_USER_COMMON/config
+    command: usr/sbin/collector --config_dir $SNAP_USER_COMMON/hermes/config
   parser:
-    command: usr/sbin/parser  --output_dir $SNAP_USER_COMMON/view
+    command: usr/sbin/parser --output_dir $SNAP_USER_COMMON/view
   webserver:
-    command: usr/sbin/webserver --frontend_dir $SNAP_USER_COMMON/frontend --view_dir $SNAP_USER_COMMON/view
+    command: usr/sbin/webserver --frontend_dir $SNAP_USER_COMMON/hermes/frontend --view_dir $SNAP_USER_COMMON/view
+  job-config:
+    command: usr/sbin/job-config --config_dir $SNAP_USER_COMMON/hermes/config
 parts:
   hermes:
     source: https://github.com/canonical/hermes.git
     plugin: make
+    stage-packages:
+      - libczmq4
+      - libnorm1
+      - libpgm-5.2-0
+      - libsodium23
+      - libzmq5
