@@ -12,6 +12,7 @@ import (
 	"github.com/cilium/ebpf"
 	"github.com/cilium/ebpf/link"
 	"github.com/sirupsen/logrus"
+	ebpfUtils "hermes/backend/ebpf/utils"
 )
 
 //go:generate go run github.com/cilium/ebpf/cmd/bpf2go -target amd64 -cc $BPF_CLANG -cflags $BPF_CFLAGS bpf memory_alloc.c -- -I../header
@@ -46,26 +47,26 @@ func (loader *MemoryLoader) GetLogDataPathPostfix() string {
 }
 
 func (loader *MemoryLoader) Load(ctx context.Context) error {
-	tpKmalloc, err := link.Tracepoint("kmem", "kmalloc", loader.objs.Kmalloc, nil)
+	tpKmalloc, err := ebpfUtils.Tracepoint("kmem", "kmalloc", loader.objs.Kmalloc)
 	if err != nil {
 		logrus.Errorf("Failed to open kmalloc tracepoint, err [%s]", err)
 		return err
 	}
-	defer tpKmalloc.Close()
+	defer ebpfUtils.Close(tpKmalloc)
 
-	tpKmallocNode, err := link.Tracepoint("kmem", "kmalloc_node", loader.objs.KmallocNode, nil)
+	tpKmallocNode, err := ebpfUtils.Tracepoint("kmem", "kmalloc_node", loader.objs.KmallocNode)
 	if err != nil {
 		logrus.Errorf("Failed to open kmalloc_node tracepoint, err [%s]", err)
 		return err
 	}
-	defer tpKmallocNode.Close()
+	defer ebpfUtils.Close(tpKmallocNode)
 
-	tpKfree, err := link.Tracepoint("kmem", "kfree", loader.objs.Kfree, nil)
+	tpKfree, err := ebpfUtils.Tracepoint("kmem", "kfree", loader.objs.Kfree)
 	if err != nil {
 		logrus.Errorf("Failed to open kfree tracepoint, err [%s]", err)
 		return err
 	}
-	defer tpKfree.Close()
+	defer ebpfUtils.Close(tpKfree)
 
 	kpKmemCacheAlloc, err := link.Kprobe("kmem_cache_alloc", loader.objs.KmemCacheAllocKprobe, nil)
 	if err != nil {
@@ -74,12 +75,12 @@ func (loader *MemoryLoader) Load(ctx context.Context) error {
 	}
 	defer kpKmemCacheAlloc.Close()
 
-	tpKmemCacheAlloc, err := link.Tracepoint("kmem", "kmem_cache_alloc", loader.objs.KmemCacheAlloc, nil)
+	tpKmemCacheAlloc, err := ebpfUtils.Tracepoint("kmem", "kmem_cache_alloc", loader.objs.KmemCacheAlloc)
 	if err != nil {
 		logrus.Errorf("Failed to open kmem_cache_alloc tracepoint, err [%s]", err)
 		return err
 	}
-	defer tpKmemCacheAlloc.Close()
+	defer ebpfUtils.Close(tpKmemCacheAlloc)
 
 	kpKmemCacheAllocNode, err := link.Kprobe("kmem_cache_alloc_node", loader.objs.KmemCacheAllocNodeKprobe, nil)
 	if err != nil {
@@ -88,19 +89,19 @@ func (loader *MemoryLoader) Load(ctx context.Context) error {
 	}
 	defer kpKmemCacheAllocNode.Close()
 
-	tpKmemCacheAllocNode, err := link.Tracepoint("kmem", "kmem_cache_alloc_node", loader.objs.KmemCacheAllocNode, nil)
+	tpKmemCacheAllocNode, err := ebpfUtils.Tracepoint("kmem", "kmem_cache_alloc_node", loader.objs.KmemCacheAllocNode)
 	if err != nil {
 		logrus.Errorf("Failed to open kmem_cache_alloc_node tracepoint, err [%s]", err)
 		return err
 	}
-	defer tpKmemCacheAllocNode.Close()
+	defer ebpfUtils.Close(tpKmemCacheAllocNode)
 
-	tpKmemCacheFree, err := link.Tracepoint("kmem", "kmem_cache_free", loader.objs.KmemCacheFree, nil)
+	tpKmemCacheFree, err := ebpfUtils.Tracepoint("kmem", "kmem_cache_free", loader.objs.KmemCacheFree)
 	if err != nil {
 		logrus.Errorf("Failed to open kmem_cache_free tracepoint, err [%s]", err)
 		return err
 	}
-	defer tpKmemCacheFree.Close()
+	defer ebpfUtils.Close(tpKmemCacheFree)
 
 	<-ctx.Done()
 	return nil
