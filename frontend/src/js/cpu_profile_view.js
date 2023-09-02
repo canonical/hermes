@@ -134,7 +134,7 @@ const CpuViewChart = ({ margins, dimensions, data, flameGraphHandler, hasFlameGr
     .range([dimensions.height - margins.top, margins.bottom])
   const text = (
     <text transform="translate(40,140)rotate(-90)" fontSize="13">
-      Memory Free(kB)
+      Usage (%)
     </text>
   )
   const rectOverlay = (

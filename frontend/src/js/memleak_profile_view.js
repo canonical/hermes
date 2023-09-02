@@ -135,7 +135,7 @@ const MemoryViewChart = ({ margins, dimensions, data, flameGraphHandler, hasFlam
     .range([dimensions.height - margins.top, margins.bottom])
   const text = (
     <text transform="translate(40,140)rotate(-90)" fontSize="13">
-      Memory Free(kB)
+      Free (KB)
     </text>
   )
   const rectOverlay = (
