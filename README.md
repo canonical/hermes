@@ -1,23 +1,50 @@
 # Introduction
-`hermes` is a time-series profiling tool for analyzing system performance issues from different dimensions.
+Hermes is a versatile time-series profiling tool for comprehensive system performance analysis. It runs periodic or oneshot jobs defined in the configurations to monitor performance metrics. If system loading stays below defined thresholds, metric collection is skipped to ensure minimal impact on system performance. This allows the profiling service to run in production environments without concern.
+
+# Big Picture
+![hermes_architecture](https://github.com/canonical/hermes/assets/49406051/3e395c68-fcea-4851-9a1b-fd44b84e22ea)
+
+To enhance flexibility, we've modularized the functionalities into distinct elements:
+- Collector
+Deploy this component on the target machine for gathering performance metrics as defined in the configurations. Collected data is stored in /var/log/collector/.
+- Parser
+Transform the collected data into a format easily readable by the frontend.
+- Frontend
+Provide two ways to visualize data for analysis - a web UI and a Grafana app.
 
 # Building
-`hermes` shall be built on Ubuntu Focal or higher versions because of package dependency.
+You have two options for building the application:
+- Local build
 ```
 git clone git@github.com:canonical/hermes.git
 cd hermes
-make
-# install binaries and config
-make install_bin
-# install UI
-make install_ui
+# Obtain root access
+sudo -i
+make && make install
+```
+- Snap build
+```
+git clone git@github.com:canonical/hermes.git
+cd hermes
+snapcraft
+# Obtain root access
+sudo -i
+snap install hermes_1.0_XXX.snap --dangerous --classic
 ```
 
 # Running
-`hermes` is composed of three different components. Please follow the steps to get a performance analysis result.
+### Configure jobs
+Control the collection logic using configurations (/root/hermes/config or /root/snap/hermes/common/hermes/config). You can disable jobs using the {hermes.}job-config command, and you can also modify task parameters within a job by directly overwriting them in the job's YAML.
 ### Collecting metrics
-`collector` is a binary to collect system performance metrics. The metrics will store under /var/log/collector folder.
+Collect performance metrics with the {hermes.}collector command. It can also detect configuration changes and respond instantly.
 ### Parsing metrics
-`parser` is a tool to parse the collected metrics into a specific format for UI to show graphs. The parsed data will store under $HOME/view folder.
-### UI
-`webserver` is a binary to show data under $HOME/view to UI. It can be run on localhost and use `http://127.0.0.1:8080/` to see the performance analysis result.
+Use the {hermes.}parser command to convert raw data into a frontend-readable format. The parser has two modes:
+- Oneshot mode: Suitable for batch processing of stored raw data.
+- Daemon mode: Uses pubsub to communicate with the collector, processing new raw data as it becomes available.
+### Frontend
+Choose between two approaches for performance analysis: web UI or Grafana app. Regardless of your preference, run the {hermes.}webserver command to provide a RESTful API.
+- Access the web UI via `http://<-webserver_ip->:8080/`.
+![hermes_web_ui_frontend](https://github.com/canonical/hermes/assets/49406051/f593e37f-779a-4901-ac30-9c69f45936e0)
+
+- Set up the Grafana app by executing `docker compose up` command in the hermes/grafana_app folder. Access it at `http://<-grafana_ip->:3000/` for login.
+![hermes_grafana_frontend](https://github.com/canonical/hermes/assets/49406051/1d14729b-cff9-42c1-ab41-8a7e6129abfd)
