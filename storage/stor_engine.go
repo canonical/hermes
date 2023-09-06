@@ -20,7 +20,7 @@ const (
 
 type StorEngine interface {
 	Save(timestamp int64, logMeta log.LogMetadata) error
-	Load() (map[int64]log.LogMetadata, error)
+	Load() (map[int64][]log.LogMetadata, error)
 }
 
 func GetStorEngine(storEngine, logDir string) (StorEngine, error) {
