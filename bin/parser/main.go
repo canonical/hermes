@@ -65,14 +65,16 @@ func OneshotParser() {
 	}
 	sort.Slice(timestamps, func(i, j int) bool { return timestamps[i] < timestamps[j] })
 	for _, timestamp := range timestamps {
-		parser, err := parser.NewParser(logDir, outputDir, timestamp, logMetas[timestamp])
-		if err != nil {
-			logrus.Errorf("Failed to generate parser for timestamp [%d], err [%s]", timestamp, err)
-			continue
-		}
+		for _, logMeta := range logMetas[timestamp] {
+			parser, err := parser.NewParser(logDir, outputDir, timestamp, logMeta)
+			if err != nil {
+				logrus.Errorf("Failed to generate parser for timestamp [%d], err [%s]", timestamp, err)
+				continue
+			}
 
-		if err := parser.Parse(); err != nil {
-			logrus.Errorf("Failed to parse timestamp [%d], err [%s]", timestamp, err)
+			if err := parser.Parse(); err != nil {
+				logrus.Errorf("Failed to parse timestamp [%d], err [%s]", timestamp, err)
+			}
 		}
 	}
 }
