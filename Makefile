@@ -42,9 +42,6 @@ endif
 ifeq ($(shell dpkg -s pkg-config 2> /dev/null; echo $$?), 1)
 	apt install -y pkg-config
 endif
-ifeq ($(shell dpkg -s libczmq-dev 2> /dev/null; echo $$?), 1)
-	apt install -y libczmq-dev
-endif
 ifeq ($(shell dpkg -s nodejs 2> /dev/null; echo $$?), 1)
 	apt install -y ca-certificates gnupg
 	mkdir -p /etc/apt/keyrings
