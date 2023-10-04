@@ -22,10 +22,10 @@ var (
 
 func init() {
 	flag.StringVar(&configDir, "config_dir", metadataDir+common.ConfigDirDefault, "The path of config directory")
-	flag.Usage = Usage
+	flag.Usage = usage
 }
 
-func Usage() {
+func usage() {
 	fmt.Println("Usage: job-config [config_dir]")
 	flag.PrintDefaults()
 }

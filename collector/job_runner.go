@@ -2,9 +2,7 @@ package collector
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"hermes/common"
 	"hermes/log"
 	"hermes/storage"
 	"sync"
@@ -15,15 +13,15 @@ import (
 )
 
 type JobRunner struct {
-	configDir     string
-	logDir        string
-	storEngine    storage.StorEngine
-	pubsub        *common.PubSub
-	quit          chan bool
-	jobsInProcess sync.Map
+	configDir      string
+	logDir         string
+	storEngine     storage.StorEngine
+	jobCompleteSub chan log.LogMetaPubFormat
+	quit           chan bool
+	jobsInProcess  sync.Map
 }
 
-func NewJobRunner(configDir, logDir, storEngine string) (*JobRunner, error) {
+func NewJobRunner(configDir, logDir, storEngine string, jobCompleteSub chan log.LogMetaPubFormat) (*JobRunner, error) {
 	err := log.PrepareLogDataDir(logDir)
 	if err != nil {
 		return nil, err
@@ -34,18 +32,13 @@ func NewJobRunner(configDir, logDir, storEngine string) (*JobRunner, error) {
 		return nil, err
 	}
 
-	pubsub, err := common.NewPubSub(common.Pub, common.JobCompleteTopic)
-	if err != nil {
-		return nil, err
-	}
-
 	return &JobRunner{
-		configDir:     configDir,
-		logDir:        logDir,
-		storEngine:    storEngineInst,
-		pubsub:        pubsub,
-		quit:          make(chan bool),
-		jobsInProcess: sync.Map{}}, nil
+		configDir:      configDir,
+		logDir:         logDir,
+		storEngine:     storEngineInst,
+		jobCompleteSub: jobCompleteSub,
+		quit:           make(chan bool),
+		jobsInProcess:  sync.Map{}}, nil
 }
 
 func (runner *JobRunner) newJob(job Job) {
@@ -104,15 +97,11 @@ func (runner *JobRunner) newJob(job Job) {
 		logrus.Errorf("Failed to save log metadata, err [%s]", err)
 	}
 
-	logMetaPub := log.LogMetaPubFormat{
-		Timestamp:   timestamp,
-		LogMetadata: logMeta,
-	}
-	bytes, err := json.Marshal(logMetaPub)
-	if err != nil {
-		logrus.Errorf("Failed to marshal json data, err [%s]", err)
-	} else {
-		runner.pubsub.Send(bytes)
+	if runner.jobCompleteSub != nil {
+		runner.jobCompleteSub <- log.LogMetaPubFormat{
+			Timestamp:   timestamp,
+			LogMetadata: logMeta,
+		}
 	}
 }
 
@@ -136,8 +125,4 @@ func (runner *JobRunner) run(ctx context.Context) {
 
 func (runner *JobRunner) Run(ctx context.Context) {
 	go runner.run(ctx)
-}
-
-func (runner *JobRunner) Release() {
-	runner.pubsub.Release()
 }

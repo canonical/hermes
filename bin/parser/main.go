@@ -1,14 +1,12 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
 	"sort"
 
 	"hermes/common"
-	"hermes/log"
 	"hermes/parser"
 	"hermes/storage"
 
@@ -23,13 +21,6 @@ var (
 	mode        string
 )
 
-var (
-	modeMap = map[string]func(){
-		"oneshot": OneshotParser,
-		"daemon":  DaemonizedParser,
-	}
-)
-
 func init() {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
@@ -40,15 +31,22 @@ func init() {
 	flag.StringVar(&outputDir, "output_dir", homeDir+common.ViewDirDefault, "The path of view directory")
 	flag.StringVar(&storEngine, "storage_engine", "file", "The storage engine (file)")
 	flag.StringVar(&mode, "mode", "oneshot", "Mode (oneshot|daemon)")
-	flag.Usage = Usage
+	flag.Usage = usage
 }
 
-func Usage() {
+func usage() {
 	fmt.Println("Usage: parser [log_dir] [output_dir] [storage_engine] [mode]")
 	flag.PrintDefaults()
 }
 
-func OneshotParser() {
+func main() {
+	flag.Parse()
+
+	err := common.LoadEnv(metadataDir)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+
 	storEngineInst, err := storage.GetStorEngine(storEngine, logDir)
 	if err != nil {
 		logrus.Fatalf("Failed to get storage engine, err [%s]", err)
@@ -77,44 +75,4 @@ func OneshotParser() {
 			}
 		}
 	}
-}
-
-func DaemonizedParser() {
-	pubsub, err := common.NewPubSub(common.Sub, common.JobCompleteTopic)
-	if err != nil {
-		logrus.Fatalf("Failed to create pubsub, err [%s]", err)
-	}
-
-	for {
-		var logMetaPub log.LogMetaPubFormat
-		bytes := pubsub.Recv()
-		if err := json.Unmarshal(bytes, &logMetaPub); err != nil {
-			logrus.Errorf("Failed to unmarshal data, err [%s]", err)
-			continue
-		}
-		parser, err := parser.NewParser(logDir, outputDir, logMetaPub.Timestamp, logMetaPub.LogMetadata)
-		if err != nil {
-			logrus.Errorf("Failed to generate parser for timestamp [%d], err [%s]", logMetaPub.Timestamp, err)
-			continue
-		}
-
-		if err := parser.Parse(); err != nil {
-			logrus.Errorf("Failed to parse timestamp [%d], err [%s]", logMetaPub.Timestamp, err)
-		}
-	}
-}
-
-func main() {
-	flag.Parse()
-
-	err := common.LoadEnv(metadataDir)
-	if err != nil {
-		logrus.Fatal(err)
-	}
-
-	modeFunc, isExist := modeMap[mode]
-	if !isExist {
-		logrus.Fatalf("Unsupported mode [%s]", mode)
-	}
-	modeFunc()
 }

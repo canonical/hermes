@@ -3,6 +3,7 @@ package collector
 import (
 	"context"
 	"fmt"
+	"hermes/log"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -90,13 +91,13 @@ type JobQueue struct {
 	runner    *JobRunner
 }
 
-func NewJobQueue(configDir, logDir, storEngine string) (*JobQueue, error) {
+func NewJobQueue(configDir, logDir, storEngine string, jobCompleteSub chan log.LogMetaPubFormat) (*JobQueue, error) {
 	ticker, err := NewJobTicker()
 	if err != nil {
 		return nil, err
 	}
 
-	runner, err := NewJobRunner(configDir, logDir, storEngine)
+	runner, err := NewJobRunner(configDir, logDir, storEngine, jobCompleteSub)
 	if err != nil {
 		return nil, err
 	}
@@ -209,8 +210,4 @@ func (jobQueue *JobQueue) Run(ctx context.Context) {
 	jobQueue.ticker.Run(ctx)
 	jobQueue.runner.Run(ctx)
 	go jobQueue.run(ctx)
-}
-
-func (jobQueue *JobQueue) Release() {
-	jobQueue.runner.Release()
 }
