@@ -7,11 +7,13 @@ import (
 
 	"hermes/common"
 	"hermes/log"
+	"github.com/sirupsen/logrus"
 )
 
 const (
 	CpuProfileJob     = "cpu_profile"
 	MemleakProfileJob = "memleak_profile"
+	IoLatencyJob      = "io_latency"
 )
 
 type ParserInstance interface {
@@ -44,6 +46,10 @@ func (parser *Parser) getTaskParser(jobName string, taskType common.TaskType) (P
 			common.MemoryInfo: GetMemoryInfoParser,
 			common.Ebpf:       GetMemoryAllocEbpfParser,
 		},
+		IoLatencyJob: {
+			common.CpuInfo: GetCpuInfoParser,
+			common.Ebpf:    GetIoLatEbpfParser,
+		},
 	}
 
 	taskMapping, isExist := parserGetMapping[jobName]
@@ -53,6 +59,7 @@ func (parser *Parser) getTaskParser(jobName string, taskType common.TaskType) (P
 
 	getParser, isExist := taskMapping[taskType]
 	if !isExist {
+		logrus.Printf("parser: %+v", getParser)
 		return nil, fmt.Errorf("Unhandled task type [%d]", taskType)
 	}
 	return getParser()
