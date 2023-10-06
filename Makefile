@@ -33,9 +33,6 @@ endif
 ifeq ($(shell dpkg -s libbpf-dev 2> /dev/null; echo $$?), 1)
 	apt install -y libbpf-dev
 endif
-ifeq ($(shell dpkg -s gcc-multilib 2> /dev/null; echo $$?), 1)
-	apt install -y gcc-multilib
-endif
 ifeq ($(shell dpkg -s protobuf-compiler 2> /dev/null; echo $$?), 1)
 	apt install -y protobuf-compiler
 endif

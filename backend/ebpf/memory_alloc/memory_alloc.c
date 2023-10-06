@@ -6,8 +6,6 @@
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_tracing.h>
 
-#include <string.h>
-
 char __license[] SEC("license") = "Dual MIT/GPL";
 
 #define MAX_ENTRIES 1000000
