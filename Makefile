@@ -42,6 +42,12 @@ endif
 ifeq ($(shell dpkg -s pkg-config 2> /dev/null; echo $$?), 1)
 	apt install -y pkg-config
 endif
+ifeq ($(shell dpkg -s sudo 2> /dev/null; echo $$?), 1)
+	apt install -y sudo
+endif
+ifeq ($(shell dpkg -s gnupg 2> /dev/null; echo $$?), 1)
+	apt install -y gnupg
+endif
 ifeq ($(shell dpkg -s nodejs 2> /dev/null; echo $$?), 1)
 	apt install -y ca-certificates gnupg
 	mkdir -p /etc/apt/keyrings

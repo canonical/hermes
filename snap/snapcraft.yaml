@@ -1,5 +1,5 @@
 name: hermes
-base: core20
+base: core22
 version: '1.0'
 summary: Time-series profiling tool
 description: |
@@ -9,7 +9,7 @@ grade: devel
 confinement: classic
 apps:
   collector:
-    command: usr/sbin/collector --config_dir $SNAP_USER_COMMON/hermes/config
+    command: usr/sbin/collector --config_dir $SNAP_USER_COMMON/hermes/config --view_dir $SNAP_USER_COMMON/view
   parser:
     command: usr/sbin/parser --output_dir $SNAP_USER_COMMON/view
   webserver:
@@ -20,9 +20,3 @@ parts:
   hermes:
     source: https://github.com/canonical/hermes.git
     plugin: make
-    stage-packages:
-      - libczmq4
-      - libnorm1
-      - libpgm-5.2-0
-      - libsodium23
-      - libzmq5
