@@ -1,4 +1,4 @@
-name: hermes
+name: hermes-time-series-profiling
 base: core22
 version: '1.0'
 summary: Time-series profiling tool
