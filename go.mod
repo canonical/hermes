@@ -16,9 +16,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/rivo/tview v0.0.0-20230621164836-6cc0565babaf
 	github.com/shirou/gopsutil v3.21.11+incompatible
-	github.com/zeromq/goczmq v4.1.0+incompatible
 	golang.org/x/sys v0.5.0
-	google.golang.org/protobuf v1.28.1
 )
 
 require (
@@ -47,4 +45,5 @@ require (
 	golang.org/x/net v0.0.0-20220722155237-a158d28d115b // indirect
 	golang.org/x/term v0.5.0 // indirect
 	golang.org/x/text v0.7.0 // indirect
+	google.golang.org/protobuf v1.28.1 // indirect
 )
