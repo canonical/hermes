@@ -60,6 +60,7 @@ build: auto_install ui backend grafana
 
 generate: export BPF_CLANG := clang
 generate: export BPF_CFLAGS := $(CFLAGS)
+generate: export BPF_ARCH := $(shell dpkg --print-architecture)
 generate: auto_install
 	go generate ./backend/ebpf/...
 

@@ -15,7 +15,7 @@ import (
 	ebpfUtils "hermes/backend/ebpf/utils"
 )
 
-//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -target amd64 -cc $BPF_CLANG -cflags $BPF_CFLAGS bpf memory_alloc.c -- -I../header
+//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -target $BPF_ARCH -cc $BPF_CLANG -cflags $BPF_CFLAGS bpf memory_alloc.c -- -I../header
 
 const SlabInfoFilePostfix = ".slab.info"
 const SlabRecFilePostfix = ".slab.rec"
