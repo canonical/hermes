@@ -14,6 +14,7 @@ DST_CONFIG_DIR := $(METADATA_DIR)/config/
 INSTALL_BIN := install -m 755
 DST_BIN_DIR := /usr/sbin/
 CFLAGS := -O2 -g -Wall -Werror $(CFLAGS)
+ARCH := $(shell dpkg --print-architecture)
 
 all: clean build
 
@@ -46,7 +47,7 @@ ifeq ($(shell dpkg -s gnupg 2> /dev/null; echo $$?), 1)
 	apt install -y gnupg
 endif
 ifeq ($(shell dpkg -s nodejs 2> /dev/null; echo $$?), 1)
-	apt install -y ca-certificates gnupg
+	apt install -y ca-certificates
 	mkdir -p /etc/apt/keyrings
 	curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
 	echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_18.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list
@@ -60,7 +61,8 @@ build: auto_install ui backend grafana
 
 generate: export BPF_CLANG := clang
 generate: export BPF_CFLAGS := $(CFLAGS)
-generate: export BPF_ARCH := $(shell dpkg --print-architecture)
+generate: export BPF_ARCH := $(ARCH)
+generate: export BPF_VMLINUX_HEADER := ../header/$(ARCH)
 generate: auto_install
 	go generate ./backend/ebpf/...
 
