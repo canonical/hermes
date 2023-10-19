@@ -1,0 +1,10 @@
+class: periodic
+interval: 30
+status: enabled
+routines:
+  io_latency:
+    condition:
+      cpu_info: null
+    content:
+      io_latency: null
+start: io_latency
