@@ -5,9 +5,9 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/sirupsen/logrus"
 	"hermes/common"
 	"hermes/log"
-	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -47,8 +47,8 @@ func (parser *Parser) getTaskParser(jobName string, taskType common.TaskType) (P
 			common.Ebpf:       GetMemoryAllocEbpfParser,
 		},
 		IoLatencyJob: {
-			common.CpuInfo: GetCpuInfoParser,
-			common.Ebpf:    GetIoLatEbpfParser,
+			common.PSI:  GetPSIParser,
+			common.Ebpf: GetIoLatEbpfParser,
 		},
 	}
 
