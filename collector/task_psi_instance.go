@@ -12,21 +12,19 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+type PSIThresholds utils.PSIResult
+
 type PSIContext struct {
-	Type utils.PSIType
-	Some []float64
-	Full []float64
+	Type        utils.PSIType    `json:"psi_type"`
+	Thresholds  *PSIThresholds   `json:"thresholds"`
+	Levels      *utils.PSIResult `json:"levels"`
+	Triggered   bool             `json:"triggered"`
+	TriggeredBy string           `json:"triggered_by"`
 }
 
 func (context *PSIContext) check() error {
 	if !common.Contains([]utils.PSIType{utils.CpuPSI, utils.MemoryPSI, utils.IOPSI}, context.Type) {
-		return fmt.Errorf("Unrecognized type [%d]", context.Type)
-	}
-	if len(context.Some) != 3 {
-		return fmt.Errorf("The length of some entry is not three")
-	}
-	if len(context.Full) != 3 {
-		return fmt.Errorf("The length of full entry is not three")
+		return fmt.Errorf("Unrecognized type [%s]", context.Type)
 	}
 	return nil
 }
@@ -44,25 +42,19 @@ func NewTaskPSIInstance(_ common.TaskType) (TaskInstance, error) {
 	return &TaskPSIInstance{}, nil
 }
 
-func (instance *TaskPSIInstance) isBeyondExpectation(psiAvgs *utils.PSIAvgs, expected []float64) bool {
-	avgs := [...]float64{psiAvgs.Avg10, psiAvgs.Avg60, psiAvgs.Avg300}
-	for idx, val := range expected {
-		if val == -1 {
-			continue
-		}
-		if idx >= len(avgs) {
-			break
-		}
-		if avgs[idx] >= val {
-			return true
-		}
+func (instance *TaskPSIInstance) isBeyondExpectation(psiAvgs *utils.PSIAvgs, expected *utils.PSIAvgs) string {
+	if psiAvgs.Avg10 >= expected.Avg10 {
+		return utils.PSIAvg10
+	} else if psiAvgs.Avg60 >= expected.Avg10 {
+		return utils.PSIAvg60
+	} else if psiAvgs.Avg300 >= expected.Avg300 {
+		return utils.PSIAvg300
 	}
-
-	return false
+	return ""
 }
 
-func (instance *TaskPSIInstance) ToFile(psiResult *utils.PSIResult, logDataPath string) error {
-	bytes, err := json.Marshal(psiResult)
+func (instance *TaskPSIInstance) ToFile(psiContext *PSIContext, logDataPath string) error {
+	bytes, err := json.Marshal(psiContext)
 	if err != nil {
 		return err
 	}
@@ -90,19 +82,31 @@ func (instance *TaskPSIInstance) Process(instContext interface{}, logDataPathGen
 	}()
 
 	var psi utils.PSI
-	psiResult, err := psi.GetSystemLevel(psiContext.Type)
+	psiContext.Levels, err = psi.GetSystemLevel(psiContext.Type)
 	if err != nil {
 		return
 	}
 
-	err = instance.ToFile(psiResult, logDataPathGenerator(".psi"))
+	var interval string
+	interval = instance.isBeyondExpectation(&psiContext.Levels.Some, &psiContext.Thresholds.Some)
+	if interval != "" {
+		psiContext.Triggered = true
+		psiContext.TriggeredBy = utils.PSISome + "/" + interval
+	} else {
+		interval = instance.isBeyondExpectation(&psiContext.Levels.Full, &psiContext.Thresholds.Full)
+		if interval != "" {
+			psiContext.Triggered = true
+			psiContext.TriggeredBy = utils.PSIFull + "/" + interval
+		}
+	}
+	err = instance.ToFile(psiContext, logDataPathGenerator(".psi"))
+
 	if err != nil {
 		logrus.Errorf("Failed to write PSI result, err [%s]", err)
 		return
 	}
 
-	if instance.isBeyondExpectation(&psiResult.Some, psiContext.Some) ||
-		instance.isBeyondExpectation(&psiResult.Full, psiContext.Full) {
+	if psiContext.Triggered {
 		err = nil
 	} else {
 		err = fmt.Errorf("PSI value does not exceed threshold")

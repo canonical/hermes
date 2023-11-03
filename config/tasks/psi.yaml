@@ -1,10 +1,11 @@
 task_type: psi
-type: 0
-some:
-  - -1
-  - -1
-  - -1
-full:
-  - -1
-  - -1
-  - -1
+type: cpu #cpu, io or memory
+thresholds:
+  some:
+    avg10: -1
+    avg60: -1
+    avg300: -1
+  full:
+    avg10: -1
+    avg60: -1
+    avg300: -1

@@ -4,7 +4,17 @@ status: enabled
 routines:
   io_latency:
     condition:
-      cpu_info: null
+      psi:
+        type: io
+        thresholds:
+          some:
+            avg10: 50.0
+            avg60: 20.0
+            avg300: 10.0
+          full:
+            avg10: 30.0
+            avg60: 15.0
+            avg300: 5.0
     content:
       io_latency: null
 start: io_latency

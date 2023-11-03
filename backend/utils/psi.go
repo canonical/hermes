@@ -2,7 +2,6 @@ package utils
 
 import (
 	"bufio"
-	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -12,20 +11,33 @@ import (
 
 const (
 	systemLevelPath = "/proc/pressure/"
+	PSISome         = "some"
+	PSIFull         = "full"
+	CpuPSI          = "cpu"
+	MemoryPSI       = "memory"
+	IOPSI           = "io"
+	PSIAvg10        = "avg10"
+	PSIAvg60        = "avg60"
+	PSIAvg300       = "avg300"
 )
 
-type PSIType uint32
-
-const (
-	CpuPSI PSIType = iota
-	MemoryPSI
-	IOPSI
-)
+type PSIType string
 
 type PSIAvgs struct {
 	Avg10  float64 `json:"avg10"`
 	Avg60  float64 `json:"avg60"`
 	Avg300 float64 `json:"avg300"`
+}
+
+func (psiAvgs *PSIAvgs) GetInterval(interval string) float64 {
+	if interval == PSIAvg10 {
+		return psiAvgs.Avg10
+	} else if interval == PSIAvg60 {
+		return psiAvgs.Avg60
+	} else if interval == PSIAvg300 {
+		return psiAvgs.Avg300
+	}
+	return 0 // unknown psi interval
 }
 
 type PSIResult struct {
@@ -35,19 +47,6 @@ type PSIResult struct {
 
 type PSI struct{}
 
-func (psi *PSI) getEntry(psiType PSIType) (string, error) {
-	switch psiType {
-	case CpuPSI:
-		return "cpu", nil
-	case MemoryPSI:
-		return "memory", nil
-	case IOPSI:
-		return "io", nil
-	default:
-		return "", fmt.Errorf("Unhandled PSI type [%d]", psiType)
-	}
-}
-
 func (psi *PSI) parseAvgs(tokens []string, avgs *PSIAvgs) {
 	for _, token := range tokens {
 		vals := strings.Split(token, "=")
@@ -56,11 +55,11 @@ func (psi *PSI) parseAvgs(tokens []string, avgs *PSIAvgs) {
 			logrus.Errorf("Failed to parse avgs [%s], err [%s]", token, err)
 			continue
 		}
-		if vals[0] == "avg10" {
+		if vals[0] == PSIAvg10 {
 			avgs.Avg10 = val
-		} else if vals[0] == "avg60" {
+		} else if vals[0] == PSIAvg60 {
 			avgs.Avg60 = val
-		} else if vals[0] == "avg300" {
+		} else if vals[0] == PSIAvg300 {
 			avgs.Avg300 = val
 		}
 	}
@@ -85,9 +84,9 @@ func (psi *PSI) getResult(path string) (*PSIResult, error) {
 		}
 
 		var avgs *PSIAvgs
-		if tokens[0] == "some" {
+		if tokens[0] == PSISome {
 			avgs = &psiResult.Some
-		} else if tokens[0] == "full" {
+		} else if tokens[0] == PSIFull {
 			avgs = &psiResult.Full
 		} else {
 			logrus.Errorf("Unexpected token [%s]", tokens[0])
@@ -103,10 +102,5 @@ func (psi *PSI) getResult(path string) (*PSIResult, error) {
 }
 
 func (psi *PSI) GetSystemLevel(psiType PSIType) (*PSIResult, error) {
-	entry, err := psi.getEntry(psiType)
-	if err != nil {
-		return nil, err
-	}
-
-	return psi.getResult(systemLevelPath + entry)
+	return psi.getResult(systemLevelPath + string(psiType))
 }
