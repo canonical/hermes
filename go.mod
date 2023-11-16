@@ -10,13 +10,14 @@ require (
 )
 
 require (
-	github.com/cilium/ebpf v0.9.3
+	github.com/cilium/ebpf v0.11.0
 	github.com/gin-gonic/gin v1.8.1
 	github.com/google/uuid v1.3.0
 	github.com/joho/godotenv v1.5.1
 	github.com/rivo/tview v0.0.0-20230621164836-6cc0565babaf
 	github.com/shirou/gopsutil v3.21.11+incompatible
-	golang.org/x/sys v0.5.0
+	golang.org/x/sys v0.6.0
+	google.golang.org/protobuf v1.28.1
 )
 
 require (
@@ -42,8 +43,8 @@ require (
 	github.com/ugorji/go/codec v1.2.7 // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519 // indirect
+	golang.org/x/exp v0.0.0-20230224173230-c95f2b4c22f2 // indirect
 	golang.org/x/net v0.0.0-20220722155237-a158d28d115b // indirect
 	golang.org/x/term v0.5.0 // indirect
 	golang.org/x/text v0.7.0 // indirect
-	google.golang.org/protobuf v1.28.1 // indirect
 )
