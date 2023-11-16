@@ -59,7 +59,7 @@ int mem_alloc(u64 addr, u32 stack_id, const char *slab, size_t bytes_alloc) {
   struct TaskInfo task_info;
 
   __builtin_memset(&task_info, 0, sizeof(struct TaskInfo));
-  bpf_probe_read_kernel_str(task_info.slab, sizeof(task_info.slab), slab);
+  bpf_core_read_str(task_info.slab, sizeof(task_info.slab), slab);
   bpf_get_current_comm(&task_info.comm, sizeof(task_info.comm));
   task_info.bytes_alloc = bytes_alloc;
   task_info.stack_id = stack_id;
@@ -144,8 +144,8 @@ static void set_tgid_pid_slab(struct kmem_cache *cache) {
   char *name = NULL;
 
   __builtin_memset(&tmp_info, 0, sizeof(tmp_info));
-  bpf_probe_read_kernel(&name, sizeof(name), &cache->name);
-  bpf_probe_read_kernel_str(tmp_info.slab, sizeof(tmp_info.slab), name);
+  bpf_core_read(&name, sizeof(name), &cache->name);
+  bpf_core_read_str(tmp_info.slab, sizeof(tmp_info.slab), name);
 
   bpf_map_update_elem(&tgid_pid_slab, &tgid_pid, &tmp_info, BPF_ANY);
 }
