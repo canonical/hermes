@@ -8,6 +8,8 @@ import (
 	"sync"
 	"time"
 
+	"hermes/common"
+
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
@@ -65,30 +67,38 @@ func (runner *JobRunner) newJob(job Job) {
 			return
 		}
 
-		err = task.Condition(runner.logDir, logMeta.DataLabel)
-		logMeta.AddMetadata(log.Metadata{
-			TaskType:       int(task.Cond.Type),
-			LogDataPostfix: task.GetCondLogDataPathPostfix(),
-		})
-		if err != nil {
-			routineName = routine.CondFail
-			continue
+		if task.Cond.Type == common.None && task.Task.Type == common.None {
+			break
 		}
 
-		errChan := make(chan error)
-		task.Process(runner.logDir, logMeta.DataLabel, errChan)
-		select {
-		case <-runner.quit:
-			return
-		case err := <-errChan:
-			if err != nil {
-				logrus.Errorf("Task [%s] failed, err [%s].", routineName, err)
-				return
-			}
+		if task.Cond.Type != common.None {
+			err = task.Condition(runner.logDir, logMeta.DataLabel)
 			logMeta.AddMetadata(log.Metadata{
-				TaskType:       int(task.Task.Type),
-				LogDataPostfix: task.GetTaskLogDataPathPostfix(),
+				TaskType:       int(task.Cond.Type),
+				LogDataPostfix: task.GetCondLogDataPathPostfix(),
 			})
+			if err != nil {
+				routineName = routine.CondFail
+				continue
+			}
+		}
+
+		if task.Task.Type != common.None {
+			errChan := make(chan error)
+			task.Process(runner.logDir, logMeta.DataLabel, errChan)
+			select {
+			case <-runner.quit:
+				return
+			case err := <-errChan:
+				if err != nil {
+					logrus.Errorf("Task [%s] failed, err [%s].", routineName, err)
+					return
+				}
+				logMeta.AddMetadata(log.Metadata{
+					TaskType:       int(task.Task.Type),
+					LogDataPostfix: task.GetTaskLogDataPathPostfix(),
+				})
+			}
 		}
 		routineName = routine.CondSucc
 	}
