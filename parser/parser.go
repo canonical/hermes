@@ -16,6 +16,21 @@ const (
 	IoLatencyJob      = "io_latency"
 )
 
+var ParserGetMapping = map[string]map[common.TaskType]func() (ParserInstance, error){
+	CpuProfileJob: {
+		common.CpuInfo: GetCpuInfoParser,
+		common.Profile: GetCpuProfileParser,
+	},
+	MemleakProfileJob: {
+		common.MemoryInfo: GetMemoryInfoParser,
+		common.Ebpf:       GetMemoryAllocEbpfParser,
+	},
+	IoLatencyJob: {
+		common.PSI:  GetPSIParser,
+		common.Ebpf: GetIoLatEbpfParser,
+	},
+}
+
 type ParserInstance interface {
 	Parse(logDataPathGenerator log.LogDataPathGenerator, timestamp int64, logDataPostfix, outputDir string) error
 }
@@ -37,22 +52,7 @@ func NewParser(logDir, outputDir string, timestamp int64, logMeta log.LogMetadat
 }
 
 func (parser *Parser) getTaskParser(jobName string, taskType common.TaskType) (ParserInstance, error) {
-	parserGetMapping := map[string]map[common.TaskType]func() (ParserInstance, error){
-		CpuProfileJob: {
-			common.CpuInfo: GetCpuInfoParser,
-			common.Profile: GetCpuProfileParser,
-		},
-		MemleakProfileJob: {
-			common.MemoryInfo: GetMemoryInfoParser,
-			common.Ebpf:       GetMemoryAllocEbpfParser,
-		},
-		IoLatencyJob: {
-			common.PSI:  GetPSIParser,
-			common.Ebpf: GetIoLatEbpfParser,
-		},
-	}
-
-	taskMapping, isExist := parserGetMapping[jobName]
+	taskMapping, isExist := ParserGetMapping[jobName]
 	if !isExist {
 		return nil, fmt.Errorf("Unhandled job name [%s]", jobName)
 	}

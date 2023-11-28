@@ -18,6 +18,16 @@ const (
 	TasksDir    = "tasks"
 )
 
+var InstGetMapping = map[common.TaskType]func(common.TaskType) (TaskInstance, error){
+	common.Binary:     NewTaskBinaryInstance,
+	common.Trace:      NewTaskTraceInstance,
+	common.Profile:    NewTaskProfileInstance,
+	common.Ebpf:       NewTaskEbpfInstance,
+	common.PSI:        NewTaskPSIInstance,
+	common.CpuInfo:    NewCpuInfoInstance,
+	common.MemoryInfo: NewMemoryInfoInstance,
+}
+
 type TaskContext struct {
 	Type    common.TaskType
 	Context common.Context
@@ -109,17 +119,7 @@ func NewTask(configDir string, routine Routine) (*Task, error) {
 }
 
 func (task *Task) getInstance(taskType common.TaskType) (TaskInstance, error) {
-	instGetMapping := map[common.TaskType]func(taskType common.TaskType) (TaskInstance, error){
-		common.Binary:     NewTaskBinaryInstance,
-		common.Trace:      NewTaskTraceInstance,
-		common.Profile:    NewTaskProfileInstance,
-		common.Ebpf:       NewTaskEbpfInstance,
-		common.PSI:        NewTaskPSIInstance,
-		common.CpuInfo:    NewCpuInfoInstance,
-		common.MemoryInfo: NewMemoryInfoInstance,
-	}
-
-	getInst, isExist := instGetMapping[taskType]
+	getInst, isExist := InstGetMapping[taskType]
 	if !isExist {
 		return nil, fmt.Errorf("Unhandled task type [%d]", taskType)
 	}
