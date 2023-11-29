@@ -89,7 +89,7 @@ func (parser *MemoryEbpfParser) writeStackCollapsedData(
 	}
 	defer fp.Close()
 
-	flameGraphData := utils.GetFlameGraphData()
+	flameGraphData := utils.NewFlameGraphData()
 
 	for slabName, rec := range *slabRec {
 		bytes, isExist := (*slabInfo)[slabName]

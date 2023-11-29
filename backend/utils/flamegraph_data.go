@@ -11,7 +11,7 @@ type FlameGraphData struct {
 	Children map[string]*FlameGraphData
 }
 
-func GetFlameGraphData() *FlameGraphData {
+func NewFlameGraphData() *FlameGraphData {
 	return &FlameGraphData{
 		Name:     "root",
 		Value:    0,
