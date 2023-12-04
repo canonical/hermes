@@ -28,8 +28,11 @@ hermes-time-series-profiling.webserver
 ![hermes_web_ui_frontend](https://github.com/canonical/hermes/assets/49406051/f593e37f-779a-4901-ac30-9c69f45936e0)
 
 - Grafana App
-	- Build the Grafana app with `make grafana` and start the Grafana server using `docker-compose up`.
-	- Access the Grafana app at http://<grafana_ip>:3000/ and set the web server's IP as the data source.
+	- Build the Grafana app with `make grafana` and start the Grafana server using `cd grafana_app; docker-compose up`.
+	- Access the Grafana app at http://<grafana_ip>:3000/
+	- Enable the Hermes plugin (Administration->Plugins, search for Hermes, select it and click 'Enable')
+	- Add the web server's IP as a Hermes plugin Data Source
+	- From the Data Source config screen, you can import dashboards from the 'Dashboards' tab (eg. CPU Profile)
 ![hermes_grafana_frontend](https://github.com/canonical/hermes/assets/49406051/1d14729b-cff9-42c1-ab41-8a7e6129abfd)
 
 # Build
