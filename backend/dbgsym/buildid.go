@@ -32,46 +32,46 @@ func NewBuildID(mode CpuMode, filePath, outputDir string) *BuildID {
 	}
 }
 
-func (inst *BuildID) getKernel() error {
+func (inst *BuildID) getKernel() (string, error) {
 	buildID, err := inst.getBuildID.Kernel()
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	fpSrc, err := os.Open("/proc/kallsyms")
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer fpSrc.Close()
 
 	dstPath := filepath.Join(inst.outputDir, buildID, "kallsyms")
 	if err := os.MkdirAll(filepath.Dir(dstPath), os.ModePerm); err != nil {
-		return err
+		return "", err
 	}
 	fpDst, err := os.Create(dstPath)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer fpDst.Close()
 
 	_, err = io.Copy(fpDst, fpSrc)
-	return err
+	return dstPath, err
 }
 
-func (inst *BuildID) getUser() error {
+func (inst *BuildID) getUser() (string, error) {
 	buildID, err := inst.getBuildID.File(inst.filePath)
 	if err != nil {
-		return err
+		return "", err
 	}
 	return NewDebugInfod(inst.outputDir).DownloadDebugInfo(buildID)
 }
 
-func (inst *BuildID) Get() error {
+func (inst *BuildID) Get() (string, error) {
 	switch inst.mode {
 	case KernelMode:
 		return inst.getKernel()
 	case UserMode:
 		return inst.getUser()
 	}
-	return fmt.Errorf("Unhandled mode: %d", inst.mode)
+	return "", fmt.Errorf("Unhandled mode: %d", inst.mode)
 }

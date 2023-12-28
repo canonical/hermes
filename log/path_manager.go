@@ -50,3 +50,7 @@ func (inst *LogPathManager) DataPath(postfix string) string {
 func (inst *LogPathManager) MetadataPath() string {
 	return filepath.Join(inst.logDir, LogMetaDirName)
 }
+
+func (inst *LogPathManager) DbgsymPath() string {
+	return filepath.Join(inst.logDir, LogDbgsymDirName)
+}

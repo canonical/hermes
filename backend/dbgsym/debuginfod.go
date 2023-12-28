@@ -25,31 +25,31 @@ func NewDebugInfod(outputDir string) *DebugInfod {
 	}
 }
 
-func (debugInfod *DebugInfod) DownloadDebugInfo(buildID string) error {
+func (debugInfod *DebugInfod) DownloadDebugInfo(buildID string) (string, error) {
 	debugInfoPath := filepath.Join(debugInfod.outputDir, buildID, DebugInfo)
 	if _, err := os.Stat(debugInfoPath); err == nil {
-		return nil
+		return debugInfoPath, nil
 	}
 
 	if err := os.MkdirAll(filepath.Dir(debugInfoPath), os.ModePerm); err != nil {
-		return err
+		return "", err
 	}
 	url, err := url.JoinPath(debugInfod.url, Buildid, buildID, DebugInfo)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	resp, err := http.Get(url)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer resp.Body.Close()
 
 	fp, err := os.Create(debugInfoPath)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer fp.Close()
 	fp.ReadFrom(resp.Body)
-	return nil
+	return debugInfoPath, nil
 }

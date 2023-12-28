@@ -3,10 +3,13 @@ package collector
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strconv"
 	"sync"
 	"time"
 
+	"hermes/backend/dbgsym"
 	"hermes/backend/perf"
 	"hermes/backend/utils"
 	"hermes/common"
@@ -79,8 +82,8 @@ func (instance *TaskProfileInstance) Process(instContext interface{}, logPathMan
 			Callchain: true,
 		},
 		Options: perf.Options{
-			Comm:  true,
-			Mmap2: true,
+			Comm: true,
+			Mmap: true,
 		},
 	}
 	perf.TaskClock.SetAttr(&attr)
@@ -95,6 +98,16 @@ func (instance *TaskProfileInstance) Process(instContext interface{}, logPathMan
 		logrus.Errorf("Failed to generate object for synthesizing events, err [%s]", err)
 	} else if err := synthesizeEvents.Synthesize(); err != nil {
 		logrus.Errorf("Failed to synthesize events, err [%s]", err)
+	}
+	if buildIDPath, err := dbgsym.NewBuildID(dbgsym.KernelMode, "", logPathManager.DbgsymPath()).Get(); err != nil {
+		logrus.Errorf("Failed to get kernel's build ID, err [%s]", err)
+	} else {
+		kernSymPath := logPathManager.DataPath(".kern_sym")
+		if relPath, err := filepath.Rel(filepath.Dir(kernSymPath), buildIDPath); err != nil {
+			logrus.Errorf("Failed to get a relative path of [%s], [%s], err [%s]", kernSymPath, buildIDPath, err)
+		} else if err := os.Symlink(relPath, kernSymPath); err != nil {
+			logrus.Errorf("Failed to create a symlink [%s], target [%s], err [%s]", kernSymPath, relPath, err)
+		}
 	}
 
 	var waitGroup sync.WaitGroup
