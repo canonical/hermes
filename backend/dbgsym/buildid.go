@@ -38,13 +38,17 @@ func (inst *BuildID) getKernel() (string, error) {
 		return "", err
 	}
 
+	dstPath := filepath.Join(inst.outputDir, buildID, "kallsyms")
+	if _, err := os.Stat(dstPath); err == nil {
+		return dstPath, err
+	}
+
 	fpSrc, err := os.Open("/proc/kallsyms")
 	if err != nil {
 		return "", err
 	}
 	defer fpSrc.Close()
 
-	dstPath := filepath.Join(inst.outputDir, buildID, "kallsyms")
 	if err := os.MkdirAll(filepath.Dir(dstPath), os.ModePerm); err != nil {
 		return "", err
 	}
