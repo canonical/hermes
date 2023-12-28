@@ -203,20 +203,20 @@ func (loader *MemoryLoader) writeSlabRec(outputPath string, recs *map[string]Sla
 	return loader.writeToFile(outputPath, &bytes)
 }
 
-func (loader *MemoryLoader) StoreData(logDataPathGenerator log.LogDataPathGenerator) error {
+func (loader *MemoryLoader) StoreData(logPathManager log.LogPathManager) error {
 	slabInfo, err := utils.GetSlabInfo()
 	if err != nil {
 		logrus.Errorf("Failed to get slab info, err [%s]", err)
 		return err
 	}
-	if err := loader.writeSlabInfo(logDataPathGenerator(SlabInfoFilePostfix), slabInfo); err != nil {
+	if err := loader.writeSlabInfo(logPathManager.DataPath(SlabInfoFilePostfix), slabInfo); err != nil {
 		logrus.Errorf("Failed to write slab info to file, err [%s]", err)
 		return err
 	}
 
 	slabRecs := map[string]SlabRecord{}
 	loader.getSlabRec(loader.objs.SlabInfo, &slabRecs)
-	if err := loader.writeSlabRec(logDataPathGenerator(SlabRecFilePostfix), &slabRecs); err != nil {
+	if err := loader.writeSlabRec(logPathManager.DataPath(SlabRecFilePostfix), &slabRecs); err != nil {
 		logrus.Errorf("Failed to write slab records to file, err [%s]", err)
 		return err
 	}

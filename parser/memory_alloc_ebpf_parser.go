@@ -101,8 +101,8 @@ func (parser *MemoryEbpfParser) writeStackCollapsedData(
 	return flameGraphData.WriteToFile(path)
 }
 
-func (parser *MemoryEbpfParser) Parse(logDataPathGenerator log.LogDataPathGenerator, timestamp int64, logDataPostfix, outputDir string) error {
-	matches, err := filepath.Glob(logDataPathGenerator(logDataPostfix))
+func (parser *MemoryEbpfParser) Parse(logPathManager log.LogPathManager, timestamp int64, logDataPostfix, outputDir string) error {
+	matches, err := filepath.Glob(logPathManager.DataPath(logDataPostfix))
 	if err != nil {
 		return err
 	}

@@ -34,9 +34,9 @@ func (parser *CpuProfileParser) parseStackCollapsedData(logPath string, recordHa
 	return nil
 }
 
-func (parser *CpuProfileParser) Parse(logDataPathGenerator log.LogDataPathGenerator, timestamp int64, logDataPostfix, outputDir string) error {
+func (parser *CpuProfileParser) Parse(logPathManager log.LogPathManager, timestamp int64, logDataPostfix, outputDir string) error {
 	recordHandler := perf.GetRecordHandler()
-	matches, err := filepath.Glob(logDataPathGenerator(logDataPostfix))
+	matches, err := filepath.Glob(logPathManager.DataPath(logDataPostfix))
 	if err != nil {
 		return err
 	}

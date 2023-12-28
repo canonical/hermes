@@ -78,8 +78,8 @@ func (parser *PSIParser) writeJSONData(rec *PSIRecord, path string) error {
 	return ioutil.WriteFile(path, bytes, 0644)
 }
 
-func (parser *PSIParser) Parse(logDataPathGenerator log.LogDataPathGenerator, timestamp int64, logDataPostfix, outputDir string) error {
-	rec, err := parser.getPSIRecord(timestamp, logDataPathGenerator(logDataPostfix))
+func (parser *PSIParser) Parse(logPathManager log.LogPathManager, timestamp int64, logDataPostfix, outputDir string) error {
+	rec, err := parser.getPSIRecord(timestamp, logPathManager.DataPath(logDataPostfix))
 	if err != nil {
 		return err
 	}

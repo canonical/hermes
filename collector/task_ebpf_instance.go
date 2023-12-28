@@ -54,7 +54,7 @@ func (instance *TaskEbpfInstance) GetLogDataPathPostfix(instContext interface{})
 	return loader.GetLogDataPathPostfix()
 }
 
-func (instance *TaskEbpfInstance) Process(instContext interface{}, logDataPathGenerator log.LogDataPathGenerator, result chan error) {
+func (instance *TaskEbpfInstance) Process(instContext interface{}, logPathManager log.LogPathManager, result chan error) {
 	ebpfContext := instContext.(*EbpfContext)
 	var err error
 	defer func() {
@@ -79,7 +79,7 @@ func (instance *TaskEbpfInstance) Process(instContext interface{}, logDataPathGe
 	if err := loader.Load(ctx); err != nil {
 		return
 	}
-	if err := loader.StoreData(logDataPathGenerator); err != nil {
+	if err := loader.StoreData(logPathManager); err != nil {
 		return
 	}
 	loader.Close()

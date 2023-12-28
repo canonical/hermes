@@ -74,7 +74,7 @@ func (instance *TaskPSIInstance) GetLogDataPathPostfix(instContext interface{}) 
 	return ".psi"
 }
 
-func (instance *TaskPSIInstance) Process(instContext interface{}, logDataPathGenerator log.LogDataPathGenerator, result chan error) {
+func (instance *TaskPSIInstance) Process(instContext interface{}, logPathManager log.LogPathManager, result chan error) {
 	psiContext := instContext.(*PSIContext)
 	var err error
 	defer func() {
@@ -99,7 +99,7 @@ func (instance *TaskPSIInstance) Process(instContext interface{}, logDataPathGen
 			psiContext.TriggeredBy = utils.PSIFull + "/" + interval
 		}
 	}
-	err = instance.ToFile(psiContext, logDataPathGenerator(".psi"))
+	err = instance.ToFile(psiContext, logPathManager.DataPath(".psi"))
 
 	if err != nil {
 		logrus.Errorf("Failed to write PSI result, err [%s]", err)

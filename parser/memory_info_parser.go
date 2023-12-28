@@ -80,8 +80,8 @@ func (parser *MemoryInfoParser) writeJSONData(rec *MemoryInfoRecord, path string
 	return ioutil.WriteFile(path, bytes, 0644)
 }
 
-func (parser *MemoryInfoParser) Parse(logDataPathGenerator log.LogDataPathGenerator, timestamp int64, logDataPostfix, outputDir string) error {
-	rec, err := parser.getMemoryInfoRecord(timestamp, logDataPathGenerator(logDataPostfix))
+func (parser *MemoryInfoParser) Parse(logPathManager log.LogPathManager, timestamp int64, logDataPostfix, outputDir string) error {
+	rec, err := parser.getMemoryInfoRecord(timestamp, logPathManager.DataPath(logDataPostfix))
 	if err != nil {
 		return err
 	}

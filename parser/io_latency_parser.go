@@ -170,10 +170,10 @@ func (p *IoLatParser) writeJSONDataBlk(rec OutputBlkData, path string) error {
 	return ioutil.WriteFile(path, bytes, 0644)
 }
 
-func (p *IoLatParser) Parse(logDataPathGenerator log.LogDataPathGenerator, timestamp int64, logDataPostfix, outputDir string) error {
+func (p *IoLatParser) Parse(logPathManager log.LogPathManager, timestamp int64, logDataPostfix, outputDir string) error {
 	var rawRecs []RawBlkLatRec
 
-	rawRecs, err := p.getRawBlkRecord(timestamp, logDataPathGenerator(logDataPostfix))
+	rawRecs, err := p.getRawBlkRecord(timestamp, logPathManager.DataPath(logDataPostfix))
 	if err != nil {
 		return err
 	}

@@ -66,7 +66,7 @@ func (instance *TaskProfileInstance) profile(ctx context.Context, cpu int, attr 
 	perfEvent.Profile(ctx, logDataPath)
 }
 
-func (instance *TaskProfileInstance) Process(instContext interface{}, logDataPathGenerator log.LogDataPathGenerator, result chan error) {
+func (instance *TaskProfileInstance) Process(instContext interface{}, logPathManager log.LogPathManager, result chan error) {
 	profileContext := instContext.(*ProfileContext)
 	var err error
 	defer func() {
@@ -91,7 +91,7 @@ func (instance *TaskProfileInstance) Process(instContext interface{}, logDataPat
 	}
 	attr.SetWakeupEvents(1)
 
-	if synthesizeEvents, err := perf.NewSynthesizeEvents(logDataPathGenerator(".synth_events")); err != nil {
+	if synthesizeEvents, err := perf.NewSynthesizeEvents(logPathManager.DataPath(".synth_events")); err != nil {
 		logrus.Errorf("Failed to generate object for synthesizing events, err [%s]", err)
 	} else if err := synthesizeEvents.Synthesize(); err != nil {
 		logrus.Errorf("Failed to synthesize events, err [%s]", err)
@@ -102,7 +102,7 @@ func (instance *TaskProfileInstance) Process(instContext interface{}, logDataPat
 	defer cancel()
 	for cpu := 0; cpu < utils.GetCpuNum(); cpu++ {
 		waitGroup.Add(1)
-		logDataPath := logDataPathGenerator(".cpu_" + strconv.Itoa(cpu))
+		logDataPath := logPathManager.DataPath(".cpu_" + strconv.Itoa(cpu))
 		go func(cpu int, path string) {
 			defer waitGroup.Done()
 			instance.profile(ctx, cpu, &attr, path)

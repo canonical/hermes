@@ -32,7 +32,7 @@ var ParserGetMapping = map[string]map[common.TaskType]func() (ParserInstance, er
 }
 
 type ParserInstance interface {
-	Parse(logDataPathGenerator log.LogDataPathGenerator, timestamp int64, logDataPostfix, outputDir string) error
+	Parse(logPathManager log.LogPathManager, timestamp int64, logDataPostfix, outputDir string) error
 }
 
 type Parser struct {
@@ -67,7 +67,7 @@ func (parser *Parser) getTaskParser(jobName string, taskType common.TaskType) (P
 
 func (parser *Parser) Parse() error {
 	for _, meta := range parser.logMeta.Metadatas {
-		logDataPathGenerator := log.GetLogDataPathGenerator(parser.logDir, parser.logMeta.DataLabel)
+		logPathManager := log.NewLogPathManager(parser.logDir).SetDataLabel(parser.logMeta.DataLabel)
 		instance, err := parser.getTaskParser(parser.logMeta.JobName, common.TaskType(meta.TaskType))
 		if err != nil {
 			return err
@@ -81,7 +81,7 @@ func (parser *Parser) Parse() error {
 		if err := os.MkdirAll(outputDir, os.ModePerm); err != nil {
 			return err
 		}
-		if err := instance.Parse(logDataPathGenerator, parser.timestamp, meta.LogDataPostfix, outputDir); err != nil {
+		if err := instance.Parse(*logPathManager, parser.timestamp, meta.LogDataPostfix, outputDir); err != nil {
 			return err
 		}
 	}

@@ -60,8 +60,8 @@ func (parser *CpuInfoParser) writeJSONData(rec *CpuInfoRecord, path string) erro
 	return ioutil.WriteFile(path, bytes, 0644)
 }
 
-func (parser *CpuInfoParser) Parse(logDataPathGenerator log.LogDataPathGenerator, timestamp int64, logDataPostfix, outputDir string) error {
-	rec, err := parser.getCpuInfoRecord(timestamp, logDataPathGenerator(logDataPostfix))
+func (parser *CpuInfoParser) Parse(logPathManager log.LogPathManager, timestamp int64, logDataPostfix, outputDir string) error {
+	rec, err := parser.getCpuInfoRecord(timestamp, logPathManager.DataPath(logDataPostfix))
 	if err != nil {
 		return err
 	}

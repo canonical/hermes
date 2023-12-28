@@ -70,7 +70,7 @@ func (instance *TaskMemoryInfoInstance) GetLogDataPathPostfix(instContext interf
 	return ".meminfo"
 }
 
-func (instance *TaskMemoryInfoInstance) Process(instContext interface{}, logDataPathGenerator log.LogDataPathGenerator, result chan error) {
+func (instance *TaskMemoryInfoInstance) Process(instContext interface{}, logPathManager log.LogPathManager, result chan error) {
 	memoryInfoContext := instContext.(*MemoryInfoContext)
 	var err error
 	defer func() {
@@ -90,7 +90,7 @@ func (instance *TaskMemoryInfoInstance) Process(instContext interface{}, logData
 		err = fmt.Errorf("MemInfo value does not exceed thresholds")
 	}
 
-	logDataPath := logDataPathGenerator(".meminfo")
+	logDataPath := logPathManager.DataPath(".meminfo")
 	if err := instance.writeToFile(memoryInfoContext, logDataPath); err != nil {
 		logrus.Errorf("Failed to write to file [%s], err [%s]", logDataPath, err)
 	}

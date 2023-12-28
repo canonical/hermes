@@ -6,19 +6,19 @@ import (
 
 	"hermes/log"
 
-	memory "hermes/backend/ebpf/memory_alloc"
 	iolat "hermes/backend/ebpf/io_latency"
+	memory "hermes/backend/ebpf/memory_alloc"
 )
 
 const (
 	MemoryEbpf = "memory"
-	IoLatEbpf = "io_latency"
+	IoLatEbpf  = "io_latency"
 )
 
 type Loader interface {
 	GetLogDataPathPostfix() string
 	Load(context context.Context) error
-	StoreData(logDataPathGenerator log.LogDataPathGenerator) error
+	StoreData(logPathManager log.LogPathManager) error
 	Close()
 }
 

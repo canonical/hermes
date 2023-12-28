@@ -24,7 +24,7 @@ type JobRunner struct {
 }
 
 func NewJobRunner(configDir, logDir, storEngine string, jobCompleteSub chan log.LogMetaPubFormat) (*JobRunner, error) {
-	err := log.PrepareLogDataDir(logDir)
+	err := log.NewLogPathManager(logDir).Prepare()
 	if err != nil {
 		return nil, err
 	}

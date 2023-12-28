@@ -35,7 +35,7 @@ type TaskContext struct {
 
 type TaskInstance interface {
 	GetLogDataPathPostfix(context interface{}) string
-	Process(context interface{}, logDataPathGenerator log.LogDataPathGenerator, result chan error)
+	Process(context interface{}, logPathManager log.LogPathManager, result chan error)
 }
 
 type Task struct {
@@ -133,8 +133,8 @@ func (task *Task) execute(context *TaskContext, logDir, logDataLabel string, err
 		return
 	}
 
-	logDataPathGenerator := log.GetLogDataPathGenerator(logDir, logDataLabel)
-	instance.Process(context.Context, logDataPathGenerator, errChan)
+	logPathManager := log.NewLogPathManager(logDir).SetDataLabel(logDataLabel)
+	instance.Process(context.Context, *logPathManager, errChan)
 }
 
 func (task *Task) GetCondLogDataPathPostfix() string {

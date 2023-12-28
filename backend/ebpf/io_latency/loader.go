@@ -206,10 +206,10 @@ func (loader *IoLatLoader) writeBlkRec(outputPath string, recs *[]BlkLatRec) err
 	return loader.writeToFile(outputPath, &bytes)
 }
 
-func (loader *IoLatLoader) StoreData(logDataPathGenerator log.LogDataPathGenerator) error {
+func (loader *IoLatLoader) StoreData(logPathManager log.LogPathManager) error {
 	blkRecs := loader.getBlkLatRecs()
 	if len(blkRecs) > 0 {
-		if err := loader.writeBlkRec(logDataPathGenerator(BlkRecFilePostfix), &blkRecs); err != nil {
+		if err := loader.writeBlkRec(logPathManager.DataPath(BlkRecFilePostfix), &blkRecs); err != nil {
 			logrus.Errorf("Failed to write blk records to file, err [%s]", err)
 			return err
 		}

@@ -49,7 +49,7 @@ func (instance *TaskTraceInstance) GetLogDataPathPostfix(instContext interface{}
 	return ".trace"
 }
 
-func (instance *TaskTraceInstance) Process(instContext interface{}, logDataPathGenerator log.LogDataPathGenerator, result chan error) {
+func (instance *TaskTraceInstance) Process(instContext interface{}, logPathManager log.LogPathManager, result chan error) {
 	traceContext := instContext.(*TraceContext)
 	var err error
 	defer func() {
@@ -66,7 +66,7 @@ func (instance *TaskTraceInstance) Process(instContext interface{}, logDataPathG
 	timeout := make(chan bool)
 	ack := make(chan error)
 
-	go instance.ftrace.Trace(logDataPathGenerator(".trace"), timeout, ack)
+	go instance.ftrace.Trace(logPathManager.DataPath(".trace"), timeout, ack)
 
 	timer := time.NewTimer(time.Duration(traceContext.Timeout) * time.Second)
 	defer timer.Stop()

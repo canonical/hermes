@@ -36,14 +36,14 @@ func (instance *TaskBinaryInstance) GetLogDataPathPostfix(instContext interface{
 	return ".binary"
 }
 
-func (instance *TaskBinaryInstance) Process(instContext interface{}, logDataPathGenerator log.LogDataPathGenerator, result chan error) {
+func (instance *TaskBinaryInstance) Process(instContext interface{}, logPathManager log.LogPathManager, result chan error) {
 	binaryContext := instContext.(*BinaryContext)
 	var err error
 	defer func() {
 		result <- err
 	}()
 
-	logDataPath := logDataPathGenerator(".binary")
+	logDataPath := logPathManager.DataPath(".binary")
 	env := map[string]string{
 		"OUTPUT_FILE": logDataPath,
 	}

@@ -53,7 +53,7 @@ func (instance *TaskCpuInfoInstance) GetLogDataPathPostfix(instContext interface
 	return ".cpuinfo"
 }
 
-func (instance *TaskCpuInfoInstance) Process(instContext interface{}, logDataPathGenerator log.LogDataPathGenerator, result chan error) {
+func (instance *TaskCpuInfoInstance) Process(instContext interface{}, logPathManager log.LogPathManager, result chan error) {
 	cpuInfoContext := instContext.(*CpuInfoContext)
 	var err error
 	defer func() {
@@ -73,7 +73,7 @@ func (instance *TaskCpuInfoInstance) Process(instContext interface{}, logDataPat
 		err = fmt.Errorf("CpuInfo value does not exceed threshold")
 	}
 
-	logDataPath := logDataPathGenerator(".cpuinfo")
+	logDataPath := logPathManager.DataPath(".cpuinfo")
 	if instance.writeToFile(cpuInfoContext, logDataPath) != nil {
 		logrus.Errorf("Failed to write to file [%s], err [%s]", logDataPath, err)
 	}
