@@ -1,4 +1,4 @@
-package utils
+package dbgsym
 
 import (
 	"net/http"
@@ -9,29 +9,24 @@ import (
 
 const (
 	DebugInfodURL = "https://debuginfod.ubuntu.com"
-	InfoDir       = "/tmp/.hermes.debuginfo/"
 	Buildid       = "buildid"
 	DebugInfo     = "debuginfo"
 )
 
 type DebugInfod struct {
-	url     string
-	infoDir string
+	url       string
+	outputDir string
 }
 
-func NewDebugInfod() *DebugInfod {
+func NewDebugInfod(outputDir string) *DebugInfod {
 	return &DebugInfod{
-		url:     DebugInfodURL,
-		infoDir: InfoDir,
+		url:       DebugInfodURL,
+		outputDir: outputDir,
 	}
 }
 
-func (debugInfod *DebugInfod) DownloadDebugInfo(file string) error {
-	buildID, err := NewBuildID(file).Get()
-	if err != nil {
-		return err
-	}
-	debugInfoPath := filepath.Join(debugInfod.infoDir, buildID, DebugInfo)
+func (debugInfod *DebugInfod) DownloadDebugInfo(buildID string) error {
+	debugInfoPath := filepath.Join(debugInfod.outputDir, buildID, DebugInfo)
 	if _, err := os.Stat(debugInfoPath); err == nil {
 		return nil
 	}

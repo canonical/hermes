@@ -1,4 +1,4 @@
-package utils
+package elf
 
 import (
 	"bytes"
@@ -11,26 +11,23 @@ import (
 )
 
 const (
-	GNUBuildID  = 3
-	BuildIDSize = 20
+	GNUBuildID     = 3
+	BuildIDSize    = 20
+	SysKernelNotes = "/sys/kernel/notes"
 )
 
-type BuildID struct {
-	FilePath string
+type GetBuildID struct{}
+
+func NewGetBuildID() *GetBuildID {
+	return &GetBuildID{}
 }
 
-func NewBuildID(filepath string) *BuildID {
-	return &BuildID{
-		FilePath: filepath,
-	}
-}
-
-func (buildID *BuildID) noteAlign(size int) int {
+func (inst *GetBuildID) noteAlign(size int) int {
 	const align = 4
 	return (size + align - 1) & ^(align - 1)
 }
 
-func (buildID *BuildID) parseBuildID(buf []byte) (string, error) {
+func (inst *GetBuildID) parseBuildID(buf []byte) (string, error) {
 	for offset := 0; offset < len(buf); {
 		var hdr struct {
 			NameSize uint32
@@ -43,8 +40,8 @@ func (buildID *BuildID) parseBuildID(buf []byte) (string, error) {
 		}
 
 		const gnu = "GNU"
-		nameSizeAligned := buildID.noteAlign(int(hdr.NameSize))
-		descSizeAligned := buildID.noteAlign(int(hdr.DescSize))
+		nameSizeAligned := inst.noteAlign(int(hdr.NameSize))
+		descSizeAligned := inst.noteAlign(int(hdr.DescSize))
 		offset += binary.Size(hdr)
 		name := string(buf[offset : offset+nameSizeAligned])
 		offset += nameSizeAligned
@@ -64,7 +61,7 @@ func (buildID *BuildID) parseBuildID(buf []byte) (string, error) {
 	return "", nil
 }
 
-func (buildID *BuildID) getBuildID32(fp *os.File, fileEndian binary.ByteOrder) (string, error) {
+func (inst *GetBuildID) getBuildID32(fp *os.File, fileEndian binary.ByteOrder) (string, error) {
 	var header elf.Header32
 	if err := binary.Read(fp, fileEndian, &header); err != nil {
 		return "", err
@@ -97,7 +94,7 @@ func (buildID *BuildID) getBuildID32(fp *os.File, fileEndian binary.ByteOrder) (
 		if err := binary.Read(fp, fileEndian, &_buf); err != nil {
 			return "", err
 		}
-		_buildID, err := buildID.parseBuildID(_buf)
+		_buildID, err := inst.parseBuildID(_buf)
 		if err != nil {
 			return "", err
 		}
@@ -108,7 +105,7 @@ func (buildID *BuildID) getBuildID32(fp *os.File, fileEndian binary.ByteOrder) (
 	return "", fmt.Errorf("Build ID not found")
 }
 
-func (buildID *BuildID) getBuildID64(fp *os.File, fileEndian binary.ByteOrder) (string, error) {
+func (inst *GetBuildID) getBuildID64(fp *os.File, fileEndian binary.ByteOrder) (string, error) {
 	var header elf.Header64
 	if err := binary.Read(fp, fileEndian, &header); err != nil {
 		return "", err
@@ -141,7 +138,7 @@ func (buildID *BuildID) getBuildID64(fp *os.File, fileEndian binary.ByteOrder) (
 		if err := binary.Read(fp, fileEndian, &_buf); err != nil {
 			return "", err
 		}
-		_buildID, err := buildID.parseBuildID(_buf)
+		_buildID, err := inst.parseBuildID(_buf)
 		if err != nil {
 			return "", err
 		}
@@ -152,7 +149,7 @@ func (buildID *BuildID) getBuildID64(fp *os.File, fileEndian binary.ByteOrder) (
 	return "", fmt.Errorf("Build ID not found")
 }
 
-func (buildID *BuildID) getIdent(fp *os.File) ([]byte, error) {
+func (inst *GetBuildID) getIdent(fp *os.File) ([]byte, error) {
 	ident := make([]byte, elf.EI_NIDENT)
 	if _, err := fp.Read(ident); err != nil {
 		return nil, err
@@ -171,32 +168,51 @@ func (buildID *BuildID) getIdent(fp *os.File) ([]byte, error) {
 	return ident, nil
 }
 
-func (buildID *BuildID) getEndian(ident []byte) binary.ByteOrder {
+func (inst *GetBuildID) getEndian(ident []byte) binary.ByteOrder {
 	if ident[elf.EI_DATA] == byte(elf.ELFDATA2LSB) {
 		return binary.LittleEndian
 	}
 	return binary.BigEndian
 }
 
-func (buildID *BuildID) Get() (string, error) {
-	if buildID.FilePath == "" {
+func (inst *GetBuildID) File(filePath string) (string, error) {
+	if filePath == "" {
 		return "", fmt.Errorf("The file path is empty")
 	}
 
-	fp, err := os.Open(buildID.FilePath)
+	fp, err := os.Open(filePath)
 	if err != nil {
 		return "", err
 	}
 	defer fp.Close()
 
-	ident, err := buildID.getIdent(fp)
+	ident, err := inst.getIdent(fp)
 	if err != nil {
 		return "", err
 	}
 
-	fileEndian := buildID.getEndian(ident)
+	fileEndian := inst.getEndian(ident)
 	if ident[elf.EI_CLASS] == byte(elf.ELFCLASS32) {
-		return buildID.getBuildID32(fp, fileEndian)
+		return inst.getBuildID32(fp, fileEndian)
 	}
-	return buildID.getBuildID64(fp, fileEndian)
+	return inst.getBuildID64(fp, fileEndian)
+}
+
+func (inst *GetBuildID) Kernel() (string, error) {
+	fp, err := os.Open(SysKernelNotes)
+	if err != nil {
+		return "", err
+	}
+	defer fp.Close()
+
+	fileInfo, err := fp.Stat()
+	if err != nil {
+		return "", err
+	}
+
+	buf := make([]byte, fileInfo.Size())
+	if _, err := fp.Read(buf); err != nil {
+		return "", err
+	}
+	return inst.parseBuildID(buf)
 }
