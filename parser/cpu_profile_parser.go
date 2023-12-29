@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -56,6 +57,9 @@ func (parser *CpuProfileParser) Parse(logPathManager log.LogPathManager, timesta
 		return err
 	}
 
+	sort.SliceStable(matches, func(i, j int) bool {
+		return strings.HasSuffix(matches[i], ".synth_events")
+	})
 	for _, filePath := range matches {
 		if strings.HasSuffix(filePath, ".kern.sym") {
 			continue
