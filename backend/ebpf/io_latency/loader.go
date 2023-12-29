@@ -41,6 +41,10 @@ func (loader *IoLatLoader) GetLogDataPathPostfix() string {
 	return BlkRecFilePostfix
 }
 
+func (loader *IoLatLoader) Prepare(logPathManager log.LogPathManager) error {
+	return nil
+}
+
 func (loader *IoLatLoader) Load(ctx context.Context) error {
 	kpBlkIoStart, err := link.Kprobe("blk_account_io_start", loader.objs.KprobeBlkAccountIoStart, nil)
 	if err != nil {

@@ -4,8 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"os"
+	"path/filepath"
 
-	"hermes/backend/symbol"
+	"hermes/backend/dbgsym"
 	"hermes/backend/utils"
 	"hermes/log"
 
@@ -16,13 +17,14 @@ import (
 )
 
 //go:generate go run github.com/cilium/ebpf/cmd/bpf2go -target $BPF_ARCH -cc $BPF_CLANG -cflags $BPF_CFLAGS bpf memory_alloc.c -- -I$BPF_VMLINUX_HEADER
-
-const SlabInfoFilePostfix = ".slab.info"
-const SlabRecFilePostfix = ".slab.rec"
+const (
+	SlabInfoFilePostfix = ".mem_alloc.slab.info"
+	SlabRecFilePostfix  = ".mem_alloc.slab.rec"
+	KernSymFilePostfix  = ".mem_alloc.kern.sym"
+)
 
 type MemoryLoader struct {
-	objs       *bpfObjects
-	symbolizer *symbol.Symbolizer
+	objs *bpfObjects
 }
 
 func GetLoader() (*MemoryLoader, error) {
@@ -31,19 +33,30 @@ func GetLoader() (*MemoryLoader, error) {
 	if err := loadBpfObjects(&objs, nil); err != nil {
 		return nil, err
 	}
-	symbolizer, err := symbol.NewSymbolizer()
-	if err != nil {
-		return nil, err
-	}
 
 	return &MemoryLoader{
-		objs:       &objs,
-		symbolizer: symbolizer,
+		objs: &objs,
 	}, nil
 }
 
 func (loader *MemoryLoader) GetLogDataPathPostfix() string {
-	return ".slab.*"
+	return ".mem_alloc.*"
+}
+
+func (loader *MemoryLoader) Prepare(logPathManager log.LogPathManager) error {
+	buildID := dbgsym.NewBuildID(dbgsym.KernelMode, "", logPathManager.DbgsymPath())
+	if _buildID, err := buildID.Build(); err != nil {
+		return err
+	} else {
+		kernSymPath := logPathManager.DataPath(KernSymFilePostfix)
+		dbgKernelPath := buildID.GetKernelPath(_buildID)
+		if relPath, err := filepath.Rel(filepath.Dir(kernSymPath), dbgKernelPath); err != nil {
+			logrus.Errorf("Failed to get a relative path of [%s], [%s], err [%s]", kernSymPath, dbgKernelPath, err)
+		} else if err := os.Symlink(relPath, kernSymPath); err != nil {
+			logrus.Errorf("Failed to create a symlink [%s], target [%s], err [%s]", kernSymPath, relPath, err)
+		}
+	}
+	return nil
 }
 
 func (loader *MemoryLoader) Load(ctx context.Context) error {
@@ -125,8 +138,8 @@ func uint8ToString(val []uint8) string {
 }
 
 type AllocDetail struct {
-	BytesAlloc     int64    `json:"bytes_alloc"`
-	CallchainInsts []string `json:"callchain_insts"`
+	BytesAlloc   int64    `json:"bytes_alloc"`
+	CallchainIps []uint64 `json:"callchain_ips"`
 }
 
 type AllocRecord struct {
@@ -149,19 +162,15 @@ func (loader *MemoryLoader) getSlabRec(infoMap *ebpf.Map, recs *map[string]SlabR
 		}
 
 		allocDetail := AllocDetail{
-			BytesAlloc:     int64(taskInfo.BytesAlloc),
-			CallchainInsts: []string{},
+			BytesAlloc:   int64(taskInfo.BytesAlloc),
+			CallchainIps: []uint64{},
 		}
 		/* skip first entry (duplicated) */
 		for _, ip := range ips[1:] {
 			if ip == 0 {
 				break
 			}
-			symbol, err := loader.symbolizer.Symbolize(ip)
-			if err != nil {
-				symbol = ""
-			}
-			allocDetail.CallchainInsts = append(allocDetail.CallchainInsts, symbol)
+			allocDetail.CallchainIps = append(allocDetail.CallchainIps, ip)
 		}
 		rec.Comm = uint8ToString(taskInfo.Comm[:])
 		rec.AllocDetails = append(rec.AllocDetails, allocDetail)

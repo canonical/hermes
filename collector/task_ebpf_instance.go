@@ -56,6 +56,7 @@ func (instance *TaskEbpfInstance) GetLogDataPathPostfix(instContext interface{})
 
 func (instance *TaskEbpfInstance) Process(instContext interface{}, logPathManager log.LogPathManager, result chan error) {
 	ebpfContext := instContext.(*EbpfContext)
+	var loader ebpf.Loader
 	var err error
 	defer func() {
 		result <- err
@@ -64,22 +65,26 @@ func (instance *TaskEbpfInstance) Process(instContext interface{}, logPathManage
 	instance.ebpfType = ebpfContext.EbpfType
 
 	// Allow the current process to lock memory for eBPF resources.
-	if err := rlimit.RemoveMemlock(); err != nil {
+	if err = rlimit.RemoveMemlock(); err != nil {
 		return
 	}
 
-	loader, err := ebpf.GetLoader(instance.ebpfType)
+	loader, err = ebpf.GetLoader(instance.ebpfType)
 	if err != nil {
+		return
+	}
+
+	if err = loader.Prepare(logPathManager); err != nil {
 		return
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(ebpfContext.Timeout)*time.Second)
 	defer cancel()
 
-	if err := loader.Load(ctx); err != nil {
+	if err = loader.Load(ctx); err != nil {
 		return
 	}
-	if err := loader.StoreData(logPathManager); err != nil {
+	if err = loader.StoreData(logPathManager); err != nil {
 		return
 	}
 	loader.Close()

@@ -10,17 +10,34 @@ import (
 	"strings"
 
 	memoryAlloc "hermes/backend/ebpf/memory_alloc"
+	"hermes/backend/symbol"
 	"hermes/backend/utils"
 	"hermes/log"
 )
 
-type MemoryEbpfParser struct{}
+type MemoryEbpfParser struct {
+	dbgDirPath    string
+	symbolizer    symbol.Symbolizer
+	kernelBuildID string
+}
 
-const UnrecordedLabel = "Unrecorded"
-const RecordedLabel = "Recorded"
+const (
+	UnrecordedLabel = "Unrecorded"
+	RecordedLabel   = "Recorded"
+	DbgDir          = ".hermes.memory_alloc_ebpf.dbg"
+)
 
 func GetMemoryAllocEbpfParser() (ParserInstance, error) {
-	return &MemoryEbpfParser{}, nil
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return nil, err
+	}
+	dbgDirPath := filepath.Join(homeDir, DbgDir)
+
+	return &MemoryEbpfParser{
+		dbgDirPath: dbgDirPath,
+		symbolizer: *symbol.NewSymbolizer(dbgDirPath),
+	}, nil
 }
 
 func (parser *MemoryEbpfParser) getSlabInfo(path string) (*utils.SlabInfo, error) {
@@ -57,8 +74,12 @@ func (parser *MemoryEbpfParser) getStacks(slabName string,
 
 	for _, allocDetail := range allocRec.AllocDetails {
 		stack := []string{}
-		for _, inst := range allocDetail.CallchainInsts {
-			stack = append(stack, inst)
+		for _, ip := range allocDetail.CallchainIps {
+			_symbol := fmt.Sprintf("0x%x", ip)
+			if __symbol, err := parser.symbolizer.Symbolize(symbol.KernelMode, parser.kernelBuildID, ip); err == nil {
+				_symbol = __symbol
+			}
+			stack = append(stack, _symbol)
 		}
 		stack = append(stack, allocRec.Comm)
 		stack = append(stack, RecordedLabel)
@@ -107,9 +128,26 @@ func (parser *MemoryEbpfParser) Parse(logPathManager log.LogPathManager, timesta
 		return err
 	}
 
+	kernSymPath := ""
+	for _, filePath := range matches {
+		if strings.HasSuffix(filePath, ".kern.sym") {
+			kernSymPath = filePath
+			break
+		}
+	}
+
+	buildID, err := symbol.KernelSymPrepare(parser.dbgDirPath, kernSymPath)
+	if err != nil {
+		return err
+	}
+	parser.kernelBuildID = buildID
+
 	var slabInfo *utils.SlabInfo = nil
 	var slabRec *map[string]memoryAlloc.SlabRecord = nil
 	for _, filePath := range matches {
+		if strings.HasSuffix(filePath, ".kern.sym") {
+			continue
+		}
 		var err error
 		if strings.Contains(filePath, memoryAlloc.SlabInfoFilePostfix) {
 			slabInfo, err = parser.getSlabInfo(filePath)

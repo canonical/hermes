@@ -2,11 +2,11 @@ package dbgsym
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 
 	"hermes/backend/elf"
+	"hermes/common"
 )
 
 type CpuMode int
@@ -32,50 +32,53 @@ func NewBuildID(mode CpuMode, filePath, outputDir string) *BuildID {
 	}
 }
 
-func (inst *BuildID) getKernel() (string, error) {
+func (inst *BuildID) composePath(buildID, fileName string) string {
+	return filepath.Join(inst.outputDir, buildID, fileName)
+}
+
+func (inst *BuildID) GetKernelPath(buildID string) string {
+	return inst.composePath(buildID, "kallsyms")
+}
+
+func (inst *BuildID) GetUserPath(buildID string) string {
+	return inst.composePath(buildID, "debuginfo")
+}
+
+func (inst *BuildID) buildKernel() (string, error) {
 	buildID, err := inst.getBuildID.Kernel()
 	if err != nil {
 		return "", err
 	}
 
-	dstPath := filepath.Join(inst.outputDir, buildID, "kallsyms")
+	srcPath := "/proc/kallsyms"
+	dstPath := inst.GetKernelPath(buildID)
 	if _, err := os.Stat(dstPath); err == nil {
 		return dstPath, err
 	}
 
-	fpSrc, err := os.Open("/proc/kallsyms")
-	if err != nil {
-		return "", err
-	}
-	defer fpSrc.Close()
-
-	if err := os.MkdirAll(filepath.Dir(dstPath), os.ModePerm); err != nil {
-		return "", err
-	}
-	fpDst, err := os.Create(dstPath)
-	if err != nil {
-		return "", err
-	}
-	defer fpDst.Close()
-
-	_, err = io.Copy(fpDst, fpSrc)
-	return dstPath, err
+	return buildID, common.CopyFile(srcPath, dstPath)
 }
 
-func (inst *BuildID) getUser() (string, error) {
+func (inst *BuildID) buildUser() (string, error) {
 	buildID, err := inst.getBuildID.File(inst.filePath)
 	if err != nil {
 		return "", err
 	}
-	return NewDebugInfod(inst.outputDir).DownloadDebugInfo(buildID)
+	dstPath := inst.GetUserPath(buildID)
+	debugInfod := NewDebugInfod(dstPath)
+	return buildID, debugInfod.DownloadDebugInfo(buildID)
 }
 
-func (inst *BuildID) Get() (string, error) {
+func (inst *BuildID) Build() (string, error) {
 	switch inst.mode {
 	case KernelMode:
-		return inst.getKernel()
+		return inst.buildKernel()
 	case UserMode:
-		return inst.getUser()
+		return inst.buildUser()
 	}
 	return "", fmt.Errorf("Unhandled mode: %d", inst.mode)
+}
+
+func GetBuildIDByPath(path string) string {
+	return filepath.Base(filepath.Dir(path))
 }

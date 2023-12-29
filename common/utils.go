@@ -3,6 +3,7 @@ package common
 import (
 	"encoding/binary"
 	"errors"
+	"io"
 	"os"
 	"path/filepath"
 
@@ -40,4 +41,24 @@ func NativeEndian() binary.ByteOrder {
 	// this also works but requires "unsafe" module
 	//var bigEndian = (*(*[2]uint8)(unsafe.Pointer(&[]uint16{1}[0])))[0] == 0
 	//return endians[bigEndian]
+}
+
+func CopyFile(srcPath, dstPath string) error {
+	fpSrc, err := os.Open(srcPath)
+	if err != nil {
+		return err
+	}
+	defer fpSrc.Close()
+
+	if err := os.MkdirAll(filepath.Dir(dstPath), os.ModePerm); err != nil {
+		return err
+	}
+	fpDst, err := os.Create(dstPath)
+	if err != nil {
+		return err
+	}
+	defer fpDst.Close()
+
+	_, err = io.Copy(fpDst, fpSrc)
+	return err
 }

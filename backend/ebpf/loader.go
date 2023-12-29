@@ -17,6 +17,7 @@ const (
 
 type Loader interface {
 	GetLogDataPathPostfix() string
+	Prepare(logPathManager log.LogPathManager) error
 	Load(context context.Context) error
 	StoreData(logPathManager log.LogPathManager) error
 	Close()

@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"hermes/backend/perf"
 	"hermes/log"
@@ -35,13 +36,30 @@ func (parser *CpuProfileParser) parseStackCollapsedData(logPath string, recordHa
 }
 
 func (parser *CpuProfileParser) Parse(logPathManager log.LogPathManager, timestamp int64, logDataPostfix, outputDir string) error {
-	recordHandler := perf.GetRecordHandler()
+	recordHandler, err := perf.NewRecordHandler()
+	if err != nil {
+		return err
+	}
 	matches, err := filepath.Glob(logPathManager.DataPath(logDataPostfix))
 	if err != nil {
 		return err
 	}
 
+	kernSymPath := ""
 	for _, filePath := range matches {
+		if strings.HasSuffix(filePath, ".kern.sym") {
+			kernSymPath = filePath
+			break
+		}
+	}
+	if err := recordHandler.PrepareKernelSymbol(kernSymPath); err != nil {
+		return err
+	}
+
+	for _, filePath := range matches {
+		if strings.HasSuffix(filePath, ".kern.sym") {
+			continue
+		}
 		if err := parser.parseStackCollapsedData(filePath, recordHandler); err != nil {
 			return err
 		}

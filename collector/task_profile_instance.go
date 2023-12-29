@@ -56,7 +56,7 @@ func NewTaskProfileInstance(_ common.TaskType) (TaskInstance, error) {
 }
 
 func (instance *TaskProfileInstance) GetLogDataPathPostfix(instContext interface{}) string {
-	return ".cpu_*"
+	return ".perf.*"
 }
 
 func (instance *TaskProfileInstance) profile(ctx context.Context, cpu int, attr *perf.Attr, logDataPath string) {
@@ -94,17 +94,19 @@ func (instance *TaskProfileInstance) Process(instContext interface{}, logPathMan
 	}
 	attr.SetWakeupEvents(1)
 
-	if synthesizeEvents, err := perf.NewSynthesizeEvents(logPathManager.DataPath(".synth_events")); err != nil {
+	if synthesizeEvents, err := perf.NewSynthesizeEvents(logPathManager.DataPath(".perf.synth_events")); err != nil {
 		logrus.Errorf("Failed to generate object for synthesizing events, err [%s]", err)
 	} else if err := synthesizeEvents.Synthesize(); err != nil {
 		logrus.Errorf("Failed to synthesize events, err [%s]", err)
 	}
-	if buildIDPath, err := dbgsym.NewBuildID(dbgsym.KernelMode, "", logPathManager.DbgsymPath()).Get(); err != nil {
+	buildID := dbgsym.NewBuildID(dbgsym.KernelMode, "", logPathManager.DbgsymPath())
+	if _buildID, err := buildID.Build(); err != nil {
 		logrus.Errorf("Failed to get kernel's build ID, err [%s]", err)
 	} else {
-		kernSymPath := logPathManager.DataPath(".kern_sym")
-		if relPath, err := filepath.Rel(filepath.Dir(kernSymPath), buildIDPath); err != nil {
-			logrus.Errorf("Failed to get a relative path of [%s], [%s], err [%s]", kernSymPath, buildIDPath, err)
+		kernSymPath := logPathManager.DataPath(".perf.kern.sym")
+		dbgKernelPath := buildID.GetKernelPath(_buildID)
+		if relPath, err := filepath.Rel(filepath.Dir(kernSymPath), dbgKernelPath); err != nil {
+			logrus.Errorf("Failed to get a relative path of [%s], [%s], err [%s]", kernSymPath, dbgKernelPath, err)
 		} else if err := os.Symlink(relPath, kernSymPath); err != nil {
 			logrus.Errorf("Failed to create a symlink [%s], target [%s], err [%s]", kernSymPath, relPath, err)
 		}
@@ -115,7 +117,7 @@ func (instance *TaskProfileInstance) Process(instContext interface{}, logPathMan
 	defer cancel()
 	for cpu := 0; cpu < utils.GetCpuNum(); cpu++ {
 		waitGroup.Add(1)
-		logDataPath := logPathManager.DataPath(".cpu_" + strconv.Itoa(cpu))
+		logDataPath := logPathManager.DataPath(".perf.cpu_" + strconv.Itoa(cpu))
 		go func(cpu int, path string) {
 			defer waitGroup.Done()
 			instance.profile(ctx, cpu, &attr, path)

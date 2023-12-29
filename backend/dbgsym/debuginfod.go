@@ -14,42 +14,41 @@ const (
 )
 
 type DebugInfod struct {
-	url       string
-	outputDir string
+	url     string
+	dstPath string
 }
 
-func NewDebugInfod(outputDir string) *DebugInfod {
+func NewDebugInfod(dstPath string) *DebugInfod {
 	return &DebugInfod{
-		url:       DebugInfodURL,
-		outputDir: outputDir,
+		url:     DebugInfodURL,
+		dstPath: dstPath,
 	}
 }
 
-func (debugInfod *DebugInfod) DownloadDebugInfo(buildID string) (string, error) {
-	debugInfoPath := filepath.Join(debugInfod.outputDir, buildID, DebugInfo)
-	if _, err := os.Stat(debugInfoPath); err == nil {
-		return debugInfoPath, nil
+func (inst *DebugInfod) DownloadDebugInfo(buildID string) error {
+	if _, err := os.Stat(inst.dstPath); err == nil {
+		return nil
 	}
 
-	if err := os.MkdirAll(filepath.Dir(debugInfoPath), os.ModePerm); err != nil {
-		return "", err
+	if err := os.MkdirAll(filepath.Dir(inst.dstPath), os.ModePerm); err != nil {
+		return err
 	}
-	url, err := url.JoinPath(debugInfod.url, Buildid, buildID, DebugInfo)
+	url, err := url.JoinPath(inst.url, Buildid, buildID, DebugInfo)
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	resp, err := http.Get(url)
 	if err != nil {
-		return "", err
+		return err
 	}
 	defer resp.Body.Close()
 
-	fp, err := os.Create(debugInfoPath)
+	fp, err := os.Create(inst.dstPath)
 	if err != nil {
-		return "", err
+		return err
 	}
 	defer fp.Close()
 	fp.ReadFrom(resp.Body)
-	return debugInfoPath, nil
+	return nil
 }
