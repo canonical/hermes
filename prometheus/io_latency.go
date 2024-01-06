@@ -13,6 +13,7 @@ type IoLatExporter struct {
 	viewDir string
 	dataDir string
 
+	// histogram (buckets) of all ops
 	ioLat *prometheus.HistogramVec
 
 	// per comm metrics
@@ -241,13 +242,12 @@ func (i *IoLatExporter) collectRaw(ch chan<- prometheus.Metric, wg *sync.WaitGro
 	if err := json.Unmarshal(bytes, &data); err != nil {
 		logrus.Errorf("collectRaw: error unmarshalling data [%s]", err)
 	}
-	//process per comm data
+
 	for _, rec := range data {
 		labels := prometheus.Labels{"device": rec.Device}
 		i.ioLat.With(labels).Observe(float64(rec.LatUs))
 	}
 
-	// send per comm
 	i.ioLat.Collect(ch)
 	wg.Done()
 }
