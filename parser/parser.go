@@ -16,6 +16,12 @@ const (
 	IoLatencyJob      = "io_latency"
 )
 
+var ParsedPostfix map[string]string = map[string]string{
+	CpuProfileJob: "overall_cpu.stack.json",
+	MemleakProfileJob: "slab.stack.json",
+	IoLatencyJob: "blk_ios.json",
+}
+
 var ParserGetMapping = map[string]map[common.TaskType]func() (ParserInstance, error){
 	CpuProfileJob: {
 		common.CpuInfo: GetCpuInfoParser,
