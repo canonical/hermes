@@ -69,7 +69,7 @@ func (parser *CpuProfileParser) Parse(logPathManager log.LogPathManager, timesta
 		}
 	}
 
-	outputPath := filepath.Join(outputDir, strconv.FormatInt(timestamp, 10), "overall_cpu.stack.json")
+	outputPath := filepath.Join(outputDir, strconv.FormatInt(timestamp, 10), ParsedPostfix[CpuProfileJob])
 	if err := os.MkdirAll(filepath.Dir(outputPath), os.ModePerm); err != nil {
 		return err
 	}

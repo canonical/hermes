@@ -3,7 +3,10 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/prometheus/client_golang/prometheus"
 	"hermes/common"
+	"hermes/parser"
+	hprom "hermes/prometheus"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -15,9 +18,11 @@ import (
 var contentParser *ContentParser
 
 var (
-	metadataDir string
-	frontendDir string
-	viewDir     string
+	metadataDir           string
+	frontendDir           string
+	viewDir               string
+	rawDataDir            string
+	runPrometheusExporter bool
 )
 
 func init() {
@@ -28,7 +33,9 @@ func init() {
 
 	flag.StringVar(&frontendDir, "frontend_dir", metadataDir+common.FrontendDirDefault, "The path of frontend directory")
 	flag.StringVar(&viewDir, "view_dir", homeDir+common.ViewDirDefault, "The path of view directory")
+	flag.StringVar(&rawDataDir, "raw_dir", common.LogDirDefault+"/data", "The path of raw data directory (prometheus only)")
 	flag.Usage = usage
+	flag.BoolVar(&runPrometheusExporter, "prometheus", false, "Whether to serve the prometheus exporter at /metrics")
 }
 
 func usage() {
@@ -68,7 +75,7 @@ func main() {
 		})
 		cpu.GET("/cpu_profile/:timestamp", func(ctx *gin.Context) {
 			timestamp := ctx.Param("timestamp")
-			path := filepath.Join(viewDir, "cpu_profile", timestamp, "overall_cpu.stack.json")
+			path := filepath.Join(viewDir, "cpu_profile", timestamp, parser.ParsedPostfix[parser.CpuProfileJob])
 			ctx.File(path)
 		})
 	}
@@ -81,9 +88,30 @@ func main() {
 		})
 		mem.GET("/memleak_profile/:timestamp", func(ctx *gin.Context) {
 			timestamp := ctx.Param("timestamp")
-			path := filepath.Join(viewDir, "memleak_profile", timestamp, "slab.stack.json")
+			path := filepath.Join(viewDir, "memleak_profile", timestamp, parser.ParsedPostfix[parser.CpuProfileJob])
 			ctx.File(path)
 		})
+	}
+
+	io := router.Group("/io")
+	{
+		io.GET("/io_latency", func(ctx *gin.Context) {
+			path := filepath.Join(viewDir, "io_latency", "overview")
+			ctx.File(path)
+		})
+		io.GET("/io_latency/:timestamp", func(ctx *gin.Context) {
+			timestamp := ctx.Param("timestamp")
+			path := filepath.Join(viewDir, "io_latency", timestamp, parser.ParsedPostfix[parser.IoLatencyJob])
+			ctx.File(path)
+		})
+	}
+
+	if runPrometheusExporter {
+		reg := prometheus.NewRegistry()
+		he := hprom.NewHermesExporter(viewDir, rawDataDir)
+		reg.MustRegister(he)
+		hh := hprom.HermesPrometheusHandler(reg)
+		router.GET("/metrics", hh)
 	}
 
 	router.NoRoute(func(ctx *gin.Context) {

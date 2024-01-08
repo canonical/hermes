@@ -162,7 +162,7 @@ func (parser *MemoryEbpfParser) Parse(logPathManager log.LogPathManager, timesta
 		}
 	}
 
-	outputPath := filepath.Join(outputDir, strconv.FormatInt(timestamp, 10), "slab.stack.json")
+	outputPath := filepath.Join(outputDir, strconv.FormatInt(timestamp, 10), ParsedPostfix[MemleakProfileJob])
 	if err := os.MkdirAll(filepath.Dir(outputPath), os.ModePerm); err != nil {
 		return err
 	}

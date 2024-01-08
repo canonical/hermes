@@ -179,7 +179,7 @@ func (p *IoLatParser) Parse(logPathManager log.LogPathManager, timestamp int64, 
 	}
 	outputBlkData := p.getParsedBlkData(rawRecs)
 
-	outputBlkPath := filepath.Join(outputDir, strconv.FormatInt(timestamp, 10), "blk_ios.json")
+	outputBlkPath := filepath.Join(outputDir, strconv.FormatInt(timestamp, 10), ParsedPostfix[IoLatencyJob])
 	if err := os.MkdirAll(filepath.Dir(outputBlkPath), os.ModePerm); err != nil {
 		return err
 	}
